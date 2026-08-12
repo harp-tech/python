@@ -86,6 +86,33 @@ _data, timestamps, _msg, payload = AnalogData.parse_bulk(raw)
 df = data.payload_to_dataframe(payload)
 ```
 
+## Align a non-Harp device with the Harp Time Code
+
+Devices outside the Harp bus keep their own clock. A Harp device emitting the
+[Harp Time Code](https://harp-tech.org/protocol/TimeCode.html) sends the current
+whole Harp second as a slow serial signal (typically 1 kbps) on a digital output,
+so those devices can record it and be aligned post-hoc. `harp.data.timecode`
+turns such a recording back into a table of anchors, keyed on whichever axis the
+device timestamps its own data on (the sample, or the local time in seconds, of
+each packet's first falling edge) against the Harp second (`"Time"`) that starts
+there:
+
+```python
+import numpy as np
+from harp.data import timecode
+
+anchors = timecode.decode_timecode_from_samples(line, sample_rate=30_000.0)  # Sample -> Time
+harp_times = np.interp(spike_samples, anchors.index, anchors["Time"])
+
+# event-based systems report transitions instead, so anchors carry local seconds
+anchors = timecode.decode_timecode_from_transitions(edge_times, edge_states)  # LocalTime -> Time
+harp_times = np.interp(spike_times, anchors.index, anchors["Time"])
+```
+
+Packets that fail their start/stop bit check, or whose seconds do not add up
+against the local clock, are dropped, so a glitched packet costs one anchor, not
+the alignment around it.
+
 ## Write data back out
 
 `to_file` and `to_buffer` are the inverse of the readers, encoding values as Harp frames. Useful for round-tripping data or generating test corpora:
