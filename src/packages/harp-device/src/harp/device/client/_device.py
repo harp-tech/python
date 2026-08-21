@@ -324,7 +324,7 @@ class Device(Generic[M]):
     def _event_loop(self) -> None:
         while True:
             msg = self._event_queue.get()
-            if msg is None:  # shutdown sentinel
+            if msg is None:  # shutdown marker
                 break
             self._deliver_event(msg)
 

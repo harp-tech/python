@@ -70,3 +70,5 @@ schema.create_device_module(yml_text, converters={"DataConverter": DataConverter
 ```
 
 `parse_device_schema(yml_text)` is also public, returning the parsed schema model without a module: registers, masks, and optional device identity.
+
+`harp-device` is released as open source under the [MIT license](https://github.com/harp-tech/python/blob/main/LICENSE). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/harp-tech/python).

@@ -45,3 +45,5 @@ Equivalent module invocations: `uv run python -m harp.benchmarks.benchmark` / `u
 - **re-read**, file re-read from disk on every run, the real-world "load a dump" path, which includes disk.
 
 The report also decomposes `parse_to_dataframe` into `parse_bulk` plus `payload_as_columns` plus pandas overhead.
+
+`harp-benchmarks` is released as open source under the [MIT license](https://github.com/harp-tech/python/blob/main/LICENSE). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/harp-tech/python).
