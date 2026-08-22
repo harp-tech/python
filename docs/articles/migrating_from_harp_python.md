@@ -9,18 +9,22 @@ This guide covers the three workflows most users relied on in `harp-python`.
 
 ## Swap the package
 
-Replace the old dependency:
+Replace the old dependency.
 
-```sh title="Before"
+**Before**
+
+```sh
 pip install harp-python
 ```
 
-```sh title="After"
+**After**
+
+```sh
 pip install harp-data
 ```
 
 For the full toolkit of serial transport, device client and data reading, install the
-umbrella package instead:
+metapackage instead:
 
 ```sh
 pip install harp
@@ -30,15 +34,19 @@ pip install harp
 
 In `harp-python`, `harp.create_reader()` accepted a dataset folder and handled
 schema loading internally. `open_dataset` is the direct replacement, and it finds the
-`device.yml` inside the folder automatically:
+`device.yml` inside the folder automatically.
 
-```python title="Before"
+**Before**
+
+```python
 import harp
 
 reader = harp.create_reader("session.harp")
 ```
 
-```python title="After"
+**After**
+
+```python
 from harp.data import open_dataset
 
 reader = open_dataset("session.harp")
@@ -78,7 +86,9 @@ The old API allowed reads through attribute access on the reader. The new
 API inverts this, so `reader.read()` takes the register class, its name or
 its address as the argument.
 
-```python title="Before"
+**Before**
+
+```python
 # by attribute name
 df = reader.AnalogData.read()
 
@@ -89,7 +99,9 @@ df = reader.registers["AnalogData"].read()
 df = reader.registers[44].read()
 ```
 
-```python title="After"
+**After**
+
+```python
 # by register class (accessed through the reader)
 df = reader.read(reader.device_module.AnalogData)
 
@@ -110,12 +122,16 @@ The `epoch` parameter keeps its name and moves from `create_reader` to `open_dat
 `harp-python` also allowed it per read. `harp-data` sets it once for the dataset, so
 every register is read on the same clock.
 
-```python title="Before"
+**Before**
+
+```python
 reader = harp.create_reader("session.harp", epoch=harp.REFERENCE_EPOCH)
 df = reader.AnalogData.read()
 ```
 
-```python title="After"
+**After**
+
+```python
 from harp.data import REFERENCE_EPOCH
 
 reader = open_dataset("session.harp", epoch=REFERENCE_EPOCH)
@@ -136,13 +152,17 @@ everything = {name: reader.read(name) for name in reader.contents}
 This is the change most likely to break working code. `harp-python` always expanded a
 bitmask register into one boolean column per flag, so a script could select a flag by
 name. `harp-data` returns a single integer column instead, and expands the flags only
-when asked:
+when asked.
 
-```python title="Before"
+**Before**
+
+```python
 led = reader.DigitalOutputSet.read()["GP15"]
 ```
 
-```python title="After"
+**After**
+
+```python
 led = reader.read("DigitalOutputSet", demux_bit_masks=True)["GP15"]
 ```
 
@@ -164,16 +184,20 @@ a comparison against a string still reads naturally.
 ## Schemaless read
 
 For a raw `.bin` file with no schema, or a quick look at the data, the `read()`
-function works the same as before. Only the import path changes:
+function works the same as before. Only the import path changes.
 
-```python title="Before"
+**Before**
+
+```python
 import harp
 
 df = harp.read("Behavior_44.bin")
 df = harp.read("Behavior_44.bin", keep_type=True)
 ```
 
-```python title="After"
+**After**
+
+```python
 from harp.data import read
 
 df = read("Behavior_44.bin")
@@ -206,5 +230,5 @@ df = reader.read(behavior.AnalogData)
 
 A generated module starts up faster and resolves under a type checker, which a module
 built from a schema at runtime cannot. See
-[Generating Registers from a Schema](../examples/create_device_module/create_device_module.md)
+[Generating Registers from a Schema](../examples/create_device_module/index.md)
 for how device modules are structured.

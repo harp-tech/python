@@ -16,15 +16,13 @@ This project includes four main packages:
 
 ## Installation
 
-All packages are published to PyPI. The `harp` package is a metadata package with no code of its own. It depends on the four packages above, so it is the easiest way to get everything:
+All packages are published to PyPI. The `harp` package is a metapackage with no code of its own. It depends on the four packages above, so it is the easiest way to get everything:
 
 ```sh
 pip install harp
 ```
 
-```sh
-uv add harp
-```
+`uv add` substitutes for `pip install` throughout.
 
 To install only part of the stack, for example when parsing offline data dumps with no need for serial I/O, install the individual packages. Each one only pulls in what it actually depends on:
 
@@ -104,7 +102,7 @@ See the [Examples](https://harp-tech.org/python/examples/) for the full walkthro
 
 ## Contributing
 
-harp is a [uv workspace](https://docs.astral.sh/uv/concepts/workspaces/): every package under `src/packages/` is its own distribution, plus the root `harp` metadata package. Bug reports and contributions are welcome, so please open an issue or pull request.
+harp is a [uv workspace](https://docs.astral.sh/uv/concepts/workspaces/): every package under `src/packages/` is its own distribution, plus the root `harp` metapackage. Bug reports and contributions are welcome, so please open an issue or pull request.
 
 Clone the repository and install everything with the `dev` dependency group: all workspace packages, editable, plus test and lint tooling.
 
