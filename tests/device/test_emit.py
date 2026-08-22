@@ -119,7 +119,7 @@ def test_register_and_payload_class_names_stay_verbatim(device_registers):
 
 
 def test_enum_names_match_generator_for_every_enum(device_registers):
-    """Every enum the reference module declares has identical members in the emitter."""
+    # Every enum the reference module declares has identical members in the emitter.
     for name, reg in _device_registers().items():
         payload = reg.payload_class
         if payload.payload_dtype.names is None:
@@ -240,7 +240,7 @@ def test_undeclared_bit_mask_resolves_to_core():
     assert _value_enum(regs["ResetFlow"]) is core.ResetFlags
 
 
-def test_reused_core_mask_roundtrips_as_the_core_type():
+def test_reused_core_mask_roundtrips_as_core_type():
     # Identity matters more than equal members: a value read through a runtime module
     # must satisfy isinstance against the same enum a generated package would use.
     regs = create_registers(CORE_MASKS_YML)

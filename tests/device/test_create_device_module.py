@@ -168,7 +168,7 @@ def test_all_covers_declarations_and_module_constants(test_module):
     }
 
 
-def test_all_matches_the_generated_package(test_module):
+def test_all_matches_generated_package(test_module):
     # expected_device is generator output for the same schema, so this pins that both
     # paths publish exactly the same surface, not merely equivalent registers.
     assert set(test_module.__all__) == set(expected_device.__all__)

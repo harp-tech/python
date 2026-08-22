@@ -188,7 +188,7 @@ def test_value_field_name_allowed():
 
 
 def test_bitfield_payloads_ndim_aware():
-    """Scalar records stay on the declared class; batches route to the auto-derived ``Batch`` twin."""
+    # Scalar records stay on the declared class; batches route to the auto-derived Batch twin.
 
     class _Flags(PayloadBase):
         flag = BitMask(enum=_Flag, mask=0x01)
@@ -209,7 +209,7 @@ def test_bitfield_payloads_ndim_aware():
 
 
 def test_bitfield_kwarg_init_round_trip():
-    """PayloadBase.__init__ supports bitfield kwargs with OR-into-slot encoding."""
+    # PayloadBase.__init__ supports bitfield kwargs with OR-into-slot encoding.
 
     class _Flags(PayloadBase):
         flag = BitMask(enum=_Flag, mask=0x01)

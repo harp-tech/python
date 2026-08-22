@@ -74,14 +74,14 @@ def _module(name: str, **attrs: object) -> types.ModuleType:
     return mod
 
 
-def test_whoami_of_zero_skips_the_check():
+def test_zero_whoami_skips_validation():
     # 0 marks an unregistered device, so opening must not read WhoAmI at all.
     device = Device(_NullTransport(), _module("Unregistered", WHO_AM_I=0, REGISTER_MAP={}))
     with device:
         assert device.module.WHO_AM_I == 0
 
 
-def test_module_is_returned_by_the_property():
+def test_module_property_returns_given_module():
     module = _module("Behavior", WHO_AM_I=0, REGISTER_MAP={})
     assert Device(_NullTransport(), module).module is module
     assert Device(_NullTransport()).module is None

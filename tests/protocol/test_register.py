@@ -81,7 +81,7 @@ def _parse_frame(frame: bytes) -> HarpMessage:
     ],
 )
 def test_scalar_register_format_write(reg_cls, address, payload_type, value, dtype):
-    """format(value) produces a parseable Write frame with the correct payload."""
+    # format(value) produces a parseable Write frame with the correct payload.
     reg = reg_cls(address)
     frame = reg.format(value)
     msg = _parse_frame(frame)
@@ -107,7 +107,7 @@ def test_scalar_register_format_write(reg_cls, address, payload_type, value, dty
     ],
 )
 def test_scalar_register_format_read(reg_cls, address, payload_type):
-    """format() (no value) produces a Read frame with empty payload."""
+    # format() (no value) produces a Read frame with empty payload.
     reg = reg_cls(address)
     frame = reg.format()
     msg = _parse_frame(frame)
@@ -118,7 +118,7 @@ def test_scalar_register_format_read(reg_cls, address, payload_type):
 
 @pytest.mark.parametrize("value", [0, 1, 2**32 - 1])
 def test_named_register_roundtrip(value):
-    """TimestampSecond write frame parses back to the same value."""
+    # TimestampSecond write frame parses back to the same value.
     frame = TimestampSecond.format(value)
     msg = _parse_frame(frame)
     parsed = TimestampSecond.parse(msg)
@@ -188,7 +188,7 @@ def test_register_repr_shows_name_and_address():
     ],
 )
 def test_format_with_payload_instance(reg_cls, payload_cls, value):
-    """Passing a PayloadXxx instance to format() uses the bytes of the instance directly."""
+    # Passing a PayloadXxx instance to format() uses the bytes of the instance directly.
     reg = reg_cls(0x08)
     payload = payload_cls(value)
     frame = reg.format(payload)
@@ -224,7 +224,7 @@ def test_parse_names_register_on_short_payload():
 
 
 def test_format_with_payload_instance_via_register():
-    """format() accepts a typed PayloadU32 and encodes it correctly."""
+    # format() accepts a typed PayloadU32 and encodes it correctly.
     payload = PayloadU32(42)
     frame = TimestampSecond.format(payload)
     msg = _parse_frame(frame)
@@ -315,7 +315,7 @@ def test_s16_array_roundtrip():
 
 
 def test_unnamed_register_auto_payload_class():
-    """A bare RegisterU8 subclass with only address set gets an auto-generated payload class."""
+    # A bare RegisterU8 subclass with only address set gets an auto-generated payload class.
 
     class MyReg(RegisterU8):
         address: ClassVar[int] = 0x50
@@ -327,7 +327,7 @@ def test_unnamed_register_auto_payload_class():
 
 
 def test_explicit_payload_class_not_overwritten():
-    """Explicit payload_class on AnalogData is not replaced by auto-generation."""
+    # Explicit payload_class on AnalogData is not replaced by auto-generation.
     assert AnalogData.payload_class is AnalogDataPayload
 
 
@@ -384,7 +384,7 @@ def test_format_write_with_timestamp():
     ],
 )
 def test_anonymous_payload_roundtrip(payload_cls, raw_value, np_dtype):
-    """Anonymous payload constructor + payload_bytes roundtrips through bytes."""
+    # Anonymous payload constructor + payload_bytes roundtrips through bytes.
     payload = payload_cls(raw_value)
     assert payload.payload_array.dtype == np_dtype
     assert payload.payload_array.tobytes() == np.asarray(raw_value, dtype=np_dtype).tobytes()
@@ -410,11 +410,9 @@ def test_structured_payload_descriptors_multi():
 
 
 def test_anonymous_payload_converter_roundtrip():
-    """A ``__value__`` Field codec encodes/decodes the single slot.
-
-    Models a register that carries one value but needs a domain codec
-    (e.g. DeviceName -> StringConverter).
-    """
+    # A __value__ Field codec encodes and decodes the single slot, modelling a register
+    # that carries one value but needs a domain codec, such as DeviceName through
+    # StringConverter.
     from harp.protocol._payload import AnonymousPayload, Field
     from harp.protocol._payload_converters import StringConverter
 
@@ -450,7 +448,7 @@ def test_anonymous_payload_converter_roundtrip():
 
 
 def test_anonymous_payload_scalar_converter_roundtrip():
-    """A scalar (non-sub-array) ``__value__`` codec also round-trips through unwrap."""
+    # A scalar (non-sub-array) __value__ codec also round-trips through unwrap.
     import enum
 
     from harp.protocol._payload import AnonymousPayload, Field
@@ -471,7 +469,7 @@ def test_anonymous_payload_scalar_converter_roundtrip():
 
 
 def test_array_register_parse_returns_ndarray():
-    """parse() on an array register returns the 1-D ndarray directly (no .value)."""
+    # parse() on an array register returns the 1-D ndarray directly (no .value).
     reg = RegisterU32Array(0x08, length=3)
     values = np.array([10, 20, 30], dtype=np.dtype("<u4"))
     frame = reg.format(values)
@@ -488,7 +486,7 @@ def test_array_register_parse_returns_ndarray():
 
 
 def test_parse_returns_numpy_scalar():
-    """parse() on a scalar register returns a 0-D numpy scalar of the correct dtype."""
+    # parse() on a scalar register returns a 0-D numpy scalar of the correct dtype.
     frame = TimestampSecond.format(42)
     msg = _parse_frame(frame)
     parsed = TimestampSecond.parse(msg)
@@ -498,7 +496,7 @@ def test_parse_returns_numpy_scalar():
 
 
 def test_parse_does_not_overrun_buffer():
-    """parse() reads exactly one record even if the buffer is larger."""
+    # parse() reads exactly one record even if the buffer is larger.
     # Two-record buffer in raw form, with no Harp header, exercising the raw-bytes path.
     raw = np.array([42, 99], dtype=np.dtype("<u4")).tobytes()
     parsed = TimestampSecond.parse(raw)
@@ -507,11 +505,9 @@ def test_parse_does_not_overrun_buffer():
 
 
 def test_batch_payload_routes_to_batch_twin():
-    """from_buffer wraps a multi-element buffer in the auto-derived ``Batch`` twin.
-
-    For array registers the payload dtype is a sub-array dtype, so a buffer
-    holding N rows of length L decodes to a shape ``(N, L)`` ndarray.
-    """
+    # from_buffer wraps a multi-element buffer in the auto-derived Batch twin. For array
+    # registers the payload dtype is a sub-array dtype, so a buffer holding N rows of
+    # length L decodes to an ndarray of shape N by L.
     reg = RegisterU32Array(0x08, length=3)
     rows = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.dtype("<u4"))
     batch = reg.payload_class.payload_from_buffer(rows.tobytes())
@@ -521,7 +517,7 @@ def test_batch_payload_routes_to_batch_twin():
 
 
 def test_struct_payload_field_descriptors_codegen_style():
-    """A struct payload declared via _Field descriptors decodes both ndim modes."""
+    # A struct payload declared via _Field descriptors decodes both ndim modes.
 
     class GeneratedAnalogPayload(PayloadBase):
         a = Field(converter=_IdentityConverter("<i2"), offset=0)
@@ -545,7 +541,7 @@ def test_struct_payload_field_descriptors_codegen_style():
 
 
 def test_repr_fields_auto_derived_from_dtype():
-    """A struct payload that doesn't set _repr_fields gets them from _dtype.names."""
+    # A struct payload that doesn't set _repr_fields gets them from _dtype.names.
 
     class P(PayloadBase):
         alpha = Field(converter=_IdentityConverter("<i2"), offset=0)
@@ -555,8 +551,8 @@ def test_repr_fields_auto_derived_from_dtype():
 
 
 def test_repr_fields_auto_derived_mixed_bitfield_and_field():
-    """A payload mixing a masked sub-field with plain Fields keeps all of them,
-    in declaration order (the masked slot must not shadow the plain fields)."""
+    # A payload mixing a masked sub-field with plain Fields keeps all of them in
+    # declaration order, so the masked slot does not shadow the plain fields.
 
     class P(PayloadBase):
         flags = Field(converter=_IdentityConverter("u1"), mask=0xFF, offset=0)
@@ -567,7 +563,7 @@ def test_repr_fields_auto_derived_mixed_bitfield_and_field():
 
 
 def test_repr_fields_auto_derived_shared_slot_bitfields():
-    """Several masked sub-fields packed into one dtype slot each appear in _repr_fields."""
+    # Several masked sub-fields packed into one dtype slot each appear in _repr_fields.
 
     class P(PayloadBase):
         low = Field(converter=_IdentityConverter("u1"), mask=0x0F, offset=0)
