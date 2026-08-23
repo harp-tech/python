@@ -10,3 +10,7 @@
 ::: harp.data.to_file
 ::: harp.data.to_buffer
 ::: harp.data.REFERENCE_EPOCH
+::: harp.data.synchronization.decode_clock_from_samples
+::: harp.data.synchronization.decode_clock_from_transitions
+::: harp.data.synchronization.ClockAnchor
+::: harp.data.synchronization.DEFAULT_BAUD_RATE

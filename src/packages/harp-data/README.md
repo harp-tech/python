@@ -86,6 +86,36 @@ _data, timestamps, _msg, payload = AnalogData.parse_bulk(raw)
 df = data.payload_to_dataframe(payload)
 ```
 
+## Align a non-Harp device to the Harp clock
+
+Devices outside the Harp bus keep their own clock. Some clock emitters mirror the
+[Synchronization Clock](https://harp-tech.org/protocol/SynchronizationClock.html)
+on a digital output at a much lower baud rate (typically 1 kbps rather than
+100 kbps) so that those devices can record it and be aligned post-hoc.
+`harp.data.synchronization` turns such a recording back into a table of anchors,
+keyed on whichever axis the device timestamps its own data on — the sample the
+packet was received at, or its local time in seconds — against the Harp second
+(`"Time"`) that packet carries:
+
+```python
+import numpy as np
+from harp.data.synchronization import decode_clock_from_samples
+
+clock = decode_clock_from_samples(sync_line, sample_rate=30_000.0)  # Sample -> Time
+harp_times = np.interp(spike_samples, clock.index, clock["Time"])
+
+# event-based systems report transitions instead, so anchors carry local seconds
+clock = decode_clock_from_transitions(edge_times, edge_states)      # LocalTime -> Time
+harp_times = np.interp(spike_times, clock.index, clock["Time"])
+```
+
+Packets that fail their start/stop bit check, or whose seconds do not add up
+against the local clock, are dropped — a glitched packet costs one anchor, not the
+alignment around it. By default anchors sit on the last transmitted bit of each
+packet, mirroring the protocol's synchronization event; pass
+`anchor="first_edge"` for emitters that align the whole second to the start of the
+transmission instead.
+
 ## Write data back out
 
 `to_file` and `to_buffer` are the inverse of the readers, encoding values as Harp frames. Useful for round-tripping data or generating test corpora:

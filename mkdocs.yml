@@ -78,6 +78,7 @@ nav:
     - Subscribing to Events: examples/subscribing_to_events/subscribing_to_events.md
     - Reading a Whole Dataset Folder: examples/read_dataset/read_dataset.md
     - Reading Data into a DataFrame: examples/read_data_to_dataframe/read_data_to_dataframe.md
+    - Aligning Local Timestamps to the Harp Clock: examples/align_to_harp_clock/align_to_harp_clock.md
   - API:
     - Protocol: api/protocol.md
     - Serial: api/serial.md
