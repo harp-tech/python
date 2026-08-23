@@ -99,7 +99,7 @@ def open_device(
         from harp.device import behavior, core
 
         with open_device(behavior, port="COM3") as dev:
-            dev.read(core.WhoAmI)           # a common register
+            dev.read(core.WhoAmI)           # a core register
             dev.read(behavior.AnalogData)   # declared by the schema
 
     - **Device subclass**: instantiates the subclass directly, preserving its type::

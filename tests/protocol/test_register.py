@@ -410,7 +410,7 @@ def test_structured_payload_descriptors_multi():
 
 
 def test_anonymous_payload_converter_roundtrip():
-    # A __value__ Field codec encodes and decodes the single slot, modelling a register
+    # A __value__ Field codec encodes and decodes the single slot, modeling a register
     # that carries one value but needs a domain codec, such as DeviceName through
     # StringConverter.
     from harp.protocol._payload import AnonymousPayload, Field

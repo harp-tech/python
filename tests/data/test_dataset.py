@@ -81,7 +81,7 @@ def test_unknown_name_raises_key_error(dataset):
 
 def test_reads_common_registers_not_named_by_module(emitted_module, tmp_path):
     # A device module names only its own registers, but a session folder also holds
-    # files for the common ones, so the reader must still decode those.
+    # files for the core ones, so the reader must still decode those.
     mod = emitted_module
     assert not hasattr(mod, "WhoAmI")  # imported from harp.device, not re-exported
 

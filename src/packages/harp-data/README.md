@@ -37,7 +37,7 @@ reader.contents  # {'WhoAmI': 0, 'AnalogData': 33, ...}
 frames = {name: reader.read(name) for name in reader.contents}
 ```
 
-A name is resolved through the device register map rather than the module namespace, so the common registers are reachable by name too.
+A name is resolved through the device register map rather than the module namespace, so the core registers are reachable by name too.
 
 A register declared in the device register map with no data present in the folder reads as an empty DataFrame carrying the same columns, since the schema describes the structure of the data regardless of whether anything was recorded. `contents` is what tells the two cases apart. A register the device does not declare at all raises `KeyError`.
 

@@ -42,7 +42,7 @@ Equivalent module invocations: `uv run python -m harp.benchmarks.benchmark` / `u
 `parse_bulk` and `parse_to_dataframe` are each timed in two modes:
 
 - **pre-read**, file read once up front, so only deserialization is timed. This isolates library speed.
-- **re-read**, file re-read from disk on every run, the real-world "load a dump" path, which includes disk.
+- **re-read**, file re-read from disk on every run, the real-world "load a log file" path, which includes disk.
 
 The report also decomposes `parse_to_dataframe` into `parse_bulk` plus `payload_as_columns` plus pandas overhead.
 

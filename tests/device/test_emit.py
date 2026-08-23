@@ -163,7 +163,7 @@ def test_core_register_structural(name, core_yml):
 
 
 # ---------------------------------------------------------------------------
-# Behavioural round-trips
+# Behavioral round-trips
 # ---------------------------------------------------------------------------
 
 

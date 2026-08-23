@@ -1,5 +1,5 @@
 """Acceptance tests: the device.yml coverage model in
-``harp.benchmarks.register_models`` round-trips, and the new API behaviours
+``harp.benchmarks.register_models`` round-trips, and the new API behaviors
 (offsets/gaps, masked overlap, single-member unwrap, strict enums) hold.
 """
 

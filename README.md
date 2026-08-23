@@ -4,15 +4,19 @@
 
 # harp
 
+Python interface to [Harp](https://harp-tech.org/articles/what-is-harp.html) devices and their recorded data, implementing the [Harp binary protocol](https://harp-tech.org/protocol/BinaryProtocol-8bit.html).
+
+Harp is a standard for asynchronous real-time data acquisition and experimental control in neuroscience. Every command and event is hardware timestamped on the device, and devices sharing a clock line continuously self-synchronize, so events across a rig sit on one clock and need no post-hoc alignment.
+
 This project includes four main packages:
 
- - **harp-protocol**: Provides the core protocol definitions and utilities for the Harp protocol. See [Protocol API Documentation](https://harp-tech.org/python/api/protocol) for details.
+ - **harp-protocol**: Implements the Harp binary protocol in Python, with registers, messages and payload parsing. See [Protocol API Documentation](https://harp-tech.org/python/api/protocol) for details.
 
- - **harp-serial**: Implements serial communication functionalities for generic Harp devices. See [Serial API Documentation](https://harp-tech.org/python/api/serial) for more information.
+ - **harp-device**: Implements the transport-agnostic `Device` interface and the core register set. See [Device API Documentation](https://harp-tech.org/python/api/device) for details.
 
- - **harp-device**: Implements the transport-agnostic `Device` interface, the common register map, and the shared registers and enums. See [Device API Documentation](https://harp-tech.org/python/api/device) for details.
+ - **harp-serial**: Connects to a `Device` over a serial COM or tty port. See [Serial API Documentation](https://harp-tech.org/python/api/serial) for details.
 
- - **harp-data**: Parses register binary dumps into pandas DataFrames. See [Data API Documentation](https://harp-tech.org/python/api/data) for more information.
+ - **harp-data**: Reads logged register files into pandas DataFrames. See [Data API Documentation](https://harp-tech.org/python/api/data) for details.
 
 ## Installation
 
@@ -24,14 +28,14 @@ pip install harp
 
 `uv add` substitutes for `pip install` throughout.
 
-To install only part of the stack, for example when parsing offline data dumps with no need for serial I/O, install the individual packages. Each one only pulls in what it actually depends on:
+To install only part of the stack, for example when reading recorded data with no need for serial I/O, install the individual packages. Each one only pulls in what it actually depends on:
 
-| Package | Provides | Depends on |
-| --- | --- | --- |
-| `harp-protocol` | Core protocol types: registers, messages, payload parsing | none |
-| `harp-device` | Transport-agnostic `Device` class, common register map | `harp-protocol` |
-| `harp-serial` | Serial COM or tty transport for `Device` | `harp-protocol`, `harp-device` |
-| `harp-data` | Parse register binary dumps into pandas DataFrames | `harp-protocol` |
+| Package | Depends on |
+| --- | --- |
+| `harp-protocol` | none |
+| `harp-device` | `harp-protocol` |
+| `harp-serial` | `harp-protocol`, `harp-device` |
+| `harp-data` | `harp-protocol` |
 
 ```sh
 pip install harp-protocol
@@ -54,7 +58,7 @@ from harp.device import behavior, core
 
 # Use "COMx" on Windows, "/dev/ttyUSBx" on Linux.
 with serial.open_device(behavior, port="COM3") as device:
-    print(device.read(core.WhoAmI).payload)         # a common register
+    print(device.read(core.WhoAmI).payload)         # a core register
     print(device.read(behavior.AnalogData).payload) # a device register
     device.write(
         core.OperationControl,

@@ -12,7 +12,7 @@ from harp.device import behavior, core
 
 # Use "COMx" on Windows, "/dev/ttyUSBx" on Linux.
 with serial.open_device(behavior, port="COM3") as device:
-    print(device.read(core.WhoAmI).payload)         # a common register
+    print(device.read(core.WhoAmI).payload)         # a core register
     print(device.read(behavior.AnalogData).payload) # a device register
 ```
 

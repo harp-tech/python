@@ -23,7 +23,7 @@ assert behavior.REGISTER_MAP[44] is AnalogData  # or by address
 with serial.open_device(behavior, port=SERIAL_PORT) as device:
     print("AnalogData:", device.read(AnalogData).payload)
 
-# The same register classes also decode a recorded binary dump into a pandas
+# The same register classes also decode a recorded register log file into a pandas
 # DataFrame. See the "Reading Data into a DataFrame" example for more.
 df = data.parse_to_dataframe(AnalogData, "Behavior_44.bin")
 print(df.head())
