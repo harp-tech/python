@@ -1,4 +1,4 @@
-# Getting Device Info
+# Reading device info
 
 This example demonstrates how to connect to a Harp device, read its information and dump the device registers.
 
@@ -6,6 +6,6 @@ This example demonstrates how to connect to a Harp device, read its information 
 
 <!--codeinclude-->
 ```python
-[](./get_info.py)
+[](./device_info.py)
 ```
 <!--/codeinclude-->

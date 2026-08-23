@@ -199,4 +199,4 @@ reader = open_dataset("session.harp", behavior)
 df = reader.read(behavior.AnalogData)
 ```
 
-A generated module starts up faster and resolves under a type checker, which a module built from a schema at runtime cannot. See [Generating Registers from a Schema](../examples/create_device_module/index.md) for how device modules are structured.
+A generated module starts up faster and resolves under a type checker, which a module built from a schema at runtime cannot. See [Registers from a schema](../examples/registers-from-schema.md) for how device modules are structured.

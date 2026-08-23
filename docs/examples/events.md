@@ -1,4 +1,4 @@
-# Subscribing to Events
+# Subscribing to events
 
 This example demonstrates how to react to messages pushed by the device, e.g. unsolicited `Event` messages, without polling, using two subscription styles:
 
@@ -11,6 +11,6 @@ Handlers run on a dedicated event thread, so they never block `read()` or `write
 
 <!--codeinclude-->
 ```python
-[](./subscribing_to_events.py)
+[](./events.py)
 ```
 <!--/codeinclude-->

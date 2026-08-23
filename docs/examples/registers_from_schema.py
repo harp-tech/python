@@ -24,7 +24,7 @@ with serial.open_device(behavior, port=SERIAL_PORT) as device:
     print("AnalogData:", device.read(AnalogData).payload)
 
 # The same register classes also decode a recorded register log file into a pandas
-# DataFrame. See the "Reading Data into a DataFrame" example for more.
+# DataFrame. See the "Reading a single register file" example for more.
 df = data.parse_to_dataframe(AnalogData, "Behavior_44.bin")
 print(df.head())
 

@@ -102,7 +102,7 @@ AnalogData = behavior.AnalogData                 # registers are reached by name
 assert behavior.REGISTER_MAP[44] is AnalogData   # or by address
 ```
 
-See the [Examples](https://harp-tech.org/python/examples/) for the full walkthroughs, including subscribing to device events and working with custom interface-type converters.
+See the examples in the documentation for the full walkthroughs, including subscribing to device events and working with custom interface-type converters.
 
 ## Contributing
 

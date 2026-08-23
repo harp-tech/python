@@ -16,5 +16,5 @@ with open("OperationControl.bin", "rb") as f:
     df = data.parse_to_dataframe(core.OperationControl, f)
 
 # To read registers from a recorded session folder, resolved against the device
-# schema, use `harp.data.open_dataset`. See the "Reading a Whole Dataset Folder"
+# schema, use `harp.data.open_dataset`. See the "Reading a dataset folder"
 # example.
