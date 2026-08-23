@@ -14,7 +14,7 @@ SERIAL_PORT = "/dev/ttyUSB0"  # or "COMx" in Windows, where "x" is the serial po
 behavior = schema.create_device_module(Path("device.yml").read_bytes())
 
 print("WhoAmI:", behavior.WHO_AM_I)  # device identity, taken from the schema
-AnalogData = behavior.AnalogData  # registers are reached by name
+AnalogData = behavior.AnalogData  # registers are accessed by name
 assert behavior.REGISTER_MAP[44] is AnalogData  # or by address
 
 # Registers are ordinary register classes, so they work with `read` and `write` on
@@ -24,7 +24,7 @@ with serial.open_device(behavior, port=SERIAL_PORT) as device:
     print("AnalogData:", device.read(AnalogData).payload)
 
 # The same register classes also decode a recorded register log file into a pandas
-# DataFrame. See the "Reading a single register file" example for more.
+# DataFrame. See the "Read a single register file" example for more.
 df = data.parse_to_dataframe(AnalogData, "Behavior_44.bin")
 print(df.head())
 

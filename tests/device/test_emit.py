@@ -497,7 +497,7 @@ def test_field_name_taking_reserved_prefix_raises(key):
 
 @pytest.mark.parametrize("key", ["Break", "Class", "Return"])
 def test_field_name_renaming_to_keyword_raises(key):
-    # `Break` renames to `break`, which is only reachable through getattr and is a
+    # `Break` renames to `break`, which is only accessible through getattr and is a
     # syntax error in a statically generated module.
     with pytest.raises(NameCollisionError, match="is a Python keyword"):
         create_registers(_one_field_schema(key))

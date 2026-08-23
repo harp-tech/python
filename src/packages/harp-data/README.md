@@ -37,9 +37,9 @@ reader.contents  # {'WhoAmI': 0, 'AnalogData': 33, ...}
 frames = {name: reader.read(name) for name in reader.contents}
 ```
 
-A name is resolved through the device register map rather than the module namespace, so the core registers are reachable by name too.
+A name is resolved through the device register map rather than the module namespace, so the core registers are accessible by name too.
 
-A register declared in the device register map with no data present in the folder reads as an empty DataFrame carrying the same columns, since the schema describes the structure of the data regardless of whether anything was recorded. `contents` is what tells the two cases apart. A register the device does not declare at all raises `KeyError`.
+The schema describes the structure regardless of what was recorded. This means a register declared in the device register map with no data present in the folder reads as an empty DataFrame carrying the same columns. `contents` is what distinguishes the two cases. A register the device does not declare at all raises `KeyError`.
 
 Given a device module already in hand, either a pre-generated package or one built with `create_device_module`, pass it as the second argument:
 
@@ -53,11 +53,11 @@ df = reader.read(behavior.AnalogData)  # by register class
 
 Prefer the register class where a generated package supplies one, since it is the only form that type-checks and a misspelling is caught before the folder is read. A module built by `create_device_module` resolves its registers as `Any`, so there the class verifies no more than the name does.
 
-The Harp time becomes the DataFrame index named `"Time"`, as float seconds by default or an absolute `DatetimeIndex` when the dataset is opened with `epoch=REFERENCE_EPOCH`. The anchor is set once for the dataset, since it describes how the recording was made rather than how one register is read. Data carrying no timestamp raise unless `time_index=False` is passed. Multi-chunk registers logged as `<DeviceName>_<address>_<suffix>.bin` are concatenated in filename order; pass a `resolver` to support an alternative on-disk layout. `paths` reports what the resolver found, keyed by address, which is where a custom layout or a chunked register can be checked.
+The Harp time becomes the DataFrame index named `"Time"`, as float seconds by default or an absolute `DatetimeIndex` when the dataset is opened with `epoch=REFERENCE_EPOCH`. The anchor is set once for the dataset, since it describes how the recording was made rather than how one register is read. Data carrying no timestamp raise unless `time_index=False` is passed. Multi-chunk registers logged as `<DeviceName>_<address>_<suffix>.bin` are concatenated in filename order. Pass a `resolver` to support an alternative on-disk layout. `paths` reports what the resolver found, keyed by address, which is where a custom layout or a chunked register can be checked.
 
 The `<DeviceName>` prefix comes from the `DEVICE_NAME` declared by the device module. Pass `name=` to override it, or to supply one when the module declares an empty name.
 
-When a device module declaring an identity is supplied and the folder carries a `device.yml`, their `whoAmI` values are checked against each other. Reusing a module across sessions and reaching the wrong folder then fails on construction rather than decoding the files against the wrong register map. Pass `validate=False` to turn off every check the reader performs, so a folder whose `device.yml` is damaged can be read with a module obtained elsewhere.
+When a device module declaring an identity is supplied and the folder carries a `device.yml`, their `whoAmI` values are checked against each other. Reusing a module across sessions and opening the wrong folder then fails on construction rather than decoding the files against the wrong register map. Pass `validate=False` to turn off every check the reader performs, so a folder whose `device.yml` is damaged can be read with a module obtained elsewhere.
 
 ## Read a single register file
 

@@ -67,12 +67,12 @@ def test_docstring_absent_when_undeclared(test_module):
     assert test_module.__doc__ is None
 
 
-def test_registers_are_reachable_by_name(test_module):
+def test_registers_are_accessible_by_name(test_module):
     assert test_module.AnalogData.address == 33
     assert test_module.EncoderMode.address == 103
 
 
-def test_registers_are_reachable_by_address(test_module):
+def test_registers_are_accessible_by_address(test_module):
     reg_map = test_module.REGISTER_MAP
     assert reg_map[33].__name__ == "AnalogData"
     assert reg_map[103].__name__ == "EncoderMode"

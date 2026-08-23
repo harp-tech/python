@@ -3,7 +3,7 @@
 A generated device package is already a module: register classes at module level
 and a ``REGISTER_MAP`` beside them (see the ``harp-device`` README).
 :func:`create_device_module` builds that same shape at runtime from a ``device.yml``, so a
-schema-driven device and a generated one are reached the same way, by name from the
+schema-driven device and a generated one are accessed the same way, by name from the
 module or by address through ``REGISTER_MAP``.
 """
 
@@ -41,7 +41,7 @@ class DeviceModuleLike(Protocol):
 class DeviceModule(types.ModuleType):
     """The type of the module returned by :func:`create_device_module`.
 
-    The declarations of the schema are reached by name and typed ``Any``, since they
+    The declarations of the schema are accessed by name and typed ``Any``, since they
     exist only at runtime. ``DEVICE_NAME``, ``REGISTER_MAP``, ``WHO_AM_I`` and
     ``__all__`` are declared here and carry their own types.
     """
@@ -94,7 +94,7 @@ def create_device_module(
 
     ``text`` is the schema itself rather than a path to it, matching
     :func:`parse_device_schema`, so read the file first. The module is **not**
-    registered in :data:`sys.modules`, so it cannot be reached by ``import`` and two
+    registered in :data:`sys.modules`, so it cannot be imported and two
     schemas may share a name without clashing. Bind it yourself::
 
         behavior = create_device_module(Path("device.yml").read_bytes())

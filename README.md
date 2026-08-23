@@ -6,11 +6,11 @@
 
 Python interface to [Harp](https://harp-tech.org/articles/what-is-harp.html) devices and their recorded data, implementing the [Harp binary protocol](https://harp-tech.org/protocol/BinaryProtocol-8bit.html).
 
-Harp is a standard for asynchronous real-time data acquisition and experimental control in neuroscience. Every command and event is hardware timestamped on the device, and devices sharing a clock line continuously self-synchronize, so events across a rig sit on one clock and need no post-hoc alignment.
+Harp is a standard for asynchronous real-time data acquisition and experimental control in neuroscience. Every command and event is hardware timestamped on the device. Devices sharing a clock line continuously self-synchronize, so events across a rig sit on one clock and need no post-hoc alignment.
 
 This project includes four main packages:
 
- - **harp-protocol**: Implements the Harp binary protocol in Python, with registers, messages and payload parsing. See [Protocol API Documentation](https://harp-tech.org/python/api/protocol) for details.
+ - **harp-protocol**: Implements the Harp binary protocol in Python, with registers, messages, and payload parsing. See [Protocol API Documentation](https://harp-tech.org/python/api/protocol) for details.
 
  - **harp-device**: Implements the transport-agnostic `Device` interface and the core register set. See [Device API Documentation](https://harp-tech.org/python/api/device) for details.
 
@@ -98,7 +98,7 @@ from pathlib import Path
 from harp.device import schema
 
 behavior = schema.create_device_module(Path("device.yml").read_bytes())
-AnalogData = behavior.AnalogData                 # registers are reached by name
+AnalogData = behavior.AnalogData                 # registers are accessed by name
 assert behavior.REGISTER_MAP[44] is AnalogData   # or by address
 ```
 
@@ -126,7 +126,7 @@ uv run pytest --cov harp     # tests
 
 To add a new package, place it under `src/packages/<name>/` with its own `pyproject.toml` and add it to `[tool.uv.sources]` in the root `pyproject.toml`. If it should ship as part of `harp`, add it to the dependencies of the root package as well.
 
-## Building the documentation
+## Build the documentation
 
 Install the docs dependency group and run mkdocs through uv:
 

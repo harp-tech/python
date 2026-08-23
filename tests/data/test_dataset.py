@@ -61,7 +61,7 @@ def test_read_by_class_from_module_namespace(dataset):
     mod, _name, root, specs = dataset
     reader = DatasetReader(mod, root)
     for address, (cls, _buf) in specs.items():
-        # The register reached by name off the module is the one at that address.
+        # The register accessed by name off the module is the one at that address.
         assert reader.read(getattr(mod, cls.__name__)).equals(reader.read(address))
 
 
@@ -92,7 +92,7 @@ def test_reads_common_registers_not_named_by_module(emitted_module, tmp_path):
 
     reader = DatasetReader(mod, tmp_path)
     # By address, by the class imported from harp.device, and by name, which resolves
-    # through the register map and so reaches further than the module namespace.
+    # through the register map and so covers more than the module namespace.
     assert len(reader.read(WhoAmI.address)) == 4
     assert reader.read(WhoAmI).equals(reader.read(WhoAmI.address))
     assert reader.read("WhoAmI").equals(reader.read(WhoAmI.address))
@@ -321,7 +321,7 @@ def test_contents_sorted_by_address(dataset):
 
 def test_contents_keys_read_every_register(dataset):
     # The comprehension over contents is what replaces a load-everything call, so its
-    # keys must reach every register with data and produce the same frames as a direct read.
+    # keys must cover every register with data and produce the same frames as a direct read.
     mod, _name, root, specs = dataset
     reader = DatasetReader(mod, root)
 
@@ -397,7 +397,7 @@ def test_open_dataset_accepts_explicit_schema_path(dataset, device_yml, tmp_path
 
 
 def test_open_dataset_accepts_device_module(dataset):
-    # The overload taking a module must reach the same reader as constructing one,
+    # The overload taking a module must produce the same reader as constructing one,
     # since it is the only route open to a pre-generated package here.
     mod, _name, root, specs = dataset
     reader = open_dataset(root, mod)

@@ -103,7 +103,7 @@ class Device(Generic[M]):
             dev.read(behavior.OperationControl)
 
     Omitting ``device_module`` skips that check. The module is not otherwise
-    consulted: registers reach :meth:`read`, :meth:`write` and :meth:`subscribe`
+    consulted: registers are passed to :meth:`read`, :meth:`write` and :meth:`subscribe`
     as arguments either way, and only a subscribed register is parsed on arrival.
 
     A request fails in one of three ways. An error reply raises :class:`DeviceError`

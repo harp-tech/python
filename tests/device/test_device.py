@@ -30,7 +30,7 @@ class _NullTransport:
 class _ScriptedTransport:
     """A transport replying with whatever ``on_write`` returns for each request.
 
-    Frames are queued from inside ``write``, which is reached only once the request is
+    Frames are queued from inside ``write``, which runs only once the request is
     registered, so a reply cannot be dispatched before there is a waiter to receive it.
     Setting ``failing`` makes the next read fail, as a removed port would.
     """
@@ -155,7 +155,7 @@ def test_read_after_transport_failure_raises_transport_error():
             device.read(core.WhoAmI)
         with pytest.raises(TransportError):
             device.read(core.WhoAmI)
-    assert len(transport.writes) == 1  # the second request never reached the transport
+    assert len(transport.writes) == 1  # the second request was never written to the transport
 
 
 def test_error_reply_raises_device_error():

@@ -1,6 +1,6 @@
-# Reading device info
+# Read device info
 
-This example demonstrates how to connect to a Harp device, read its information and dump the device registers.
+This example demonstrates how to connect to a Harp device, read its information, and dump the device registers.
 
 {% include-markdown "includes/serial-port.md" %}
 

@@ -21,7 +21,7 @@ reader = data.open_dataset("session.harp")
 df = reader.read(core.OperationControl)
 
 # A register can also be read by name. Names resolve through the device register
-# map rather than the module namespace, so core registers are reachable too.
+# map rather than the module namespace, so core registers are accessible too.
 df = reader.read("OperationControl")
 
 # Or by address. The Harp time becomes the DataFrame index, named "Time",

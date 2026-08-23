@@ -1,12 +1,12 @@
-# Migrating from harp-python
+# Migrate from harp-python
 
 `harp-data` is the successor to `harp-python` for reading Harp binary data files into pandas DataFrames. The core concepts of device schemas, register maps and binary files are unchanged, but the API has been reorganized to separate data reading from device communication.
 
 This guide covers the three workflows most users relied on in `harp-python`.
 
-## Swap the package
+## Installation
 
-Replace the old dependency.
+`harp-python` was a single distribution. Reading data now needs only `harp-data`, since serial transport and the device client are separate packages.
 
 **Before**
 
@@ -26,7 +26,7 @@ For the full toolkit of serial transport, device client and data reading, instal
 pip install harp
 ```
 
-## Loading a device schema at runtime
+## Load a device schema at runtime
 
 In `harp-python`, `harp.create_reader()` accepted a dataset folder and handled schema loading internally. `open_dataset` is the direct replacement, and it finds the `device.yml` inside the folder automatically.
 
@@ -52,7 +52,7 @@ If the schema lives outside the data folder, pass it explicitly:
 reader = open_dataset("session.harp", schema="/path/to/device.yml")
 ```
 
-### Finding out what a session holds
+### List the session contents
 
 `reader.contents` maps the name of every register with data in the folder to its address, in address order, which is the quickest way to see what was recorded:
 
@@ -61,7 +61,7 @@ reader = open_dataset("session.harp")
 print(reader.contents)   # {'WhoAmI': 0, 'DigitalInputState': 32, ...}
 ```
 
-The reader also holds the compiled device module at `reader.device_module`, so a register class can be reached without keeping a separate variable:
+The reader also holds the compiled device module at `reader.device_module`, so a register class can be accessed without keeping a separate variable:
 
 ```python
 df = reader.read(reader.device_module.AnalogData)
@@ -70,9 +70,9 @@ df = reader.read(reader.device_module.AnalogData)
 !!! note
     The old `harp.read_schema()` had no direct equivalent that needed calling separately. `open_dataset` handles schema loading in one step, matching the convenience of the original API.
 
-## Reading a single register
+## Read a single register
 
-The old API allowed reads through attribute access on the reader. The new API inverts this, so `reader.read()` takes the register class, its name or its address as the argument.
+The old API allowed reads through attribute access on the reader. The new API inverts this, so `reader.read()` takes the register class, its name, or its address as the argument.
 
 **Before**
 
@@ -122,7 +122,7 @@ reader = open_dataset("session.harp", epoch=REFERENCE_EPOCH)
 df = reader.read(reader.device_module.AnalogData)
 ```
 
-### Reading the whole session at once
+### Read the whole session at once
 
 There is no `read_all()`. Whole-session loading is a comprehension over `contents`, which keeps the choice of what to load with the caller:
 
@@ -146,7 +146,7 @@ led = reader.DigitalOutputSet.read()["GP15"]
 led = reader.read("DigitalOutputSet", demux_bit_masks=True)["GP15"]
 ```
 
-Group masks need no such flag. `harp-python` mapped each value to its member name, and `harp-data` decodes them by default, as a `pd.Categorical` rather than plain strings, so a comparison against a string still reads naturally.
+Group masks need no such flag. `harp-python` mapped each value to its member name, and `harp-data` decodes them by default, as a `pd.Categorical` rather than plain strings, so a comparison against a string still works.
 
 ### Parameter reference
 
@@ -183,9 +183,11 @@ df = read("Behavior_44.bin", keep_type=True)
 
 Both functions infer the payload type and element count from the frame, so no register metadata is needed. The new one assumes timestamped data, which is what a device sends, and takes `time_index=False` for the rare buffer that is not. It also takes `epoch` per call, since a single file has no dataset to set one on.
 
-## Going further: static device packages
+## Static device packages
 
-Loading a YAML at runtime is convenient, but for production workflows, or where IDE autocompletion and type checking matter, a generated device package gives the same interface without parsing a schema at startup.
+Loading a YAML at runtime is convenient. However, a generated device package gives the same interface without parsing a schema at startup, and its registers resolve under IDE autocompletion and a type checker.
+
+It also validates what it opens. The package declares its own `WHO_AM_I`, which the reader checks against the `device.yml` in the folder. A session recorded from a different device then fails on construction rather than decoding the files against the wrong register map. A module built from that same folder cannot catch this, since it agrees with the folder by definition.
 
 Such a package is an ordinary Python module under the `harp.device` namespace. Import it, pass it to `open_dataset`, and the rest of the API is identical:
 

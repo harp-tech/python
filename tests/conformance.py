@@ -99,16 +99,16 @@ def dataset_reader_keeps_module_type(
     """The reader is typed on the module it was given, not on the contract.
 
     Reading it back as ``DeviceModuleLike`` would leave only the three declarations of
-    the contract, so every register reached through the reader would fail to resolve.
+    the contract, so every register accessed through the reader would fail to resolve.
     """
     assert_type(DatasetReader(schema_built, "session.harp").device_module, DeviceModule)
     assert_type(DatasetReader(generated, "session.harp").device_module, DeviceModuleLike)
 
 
 def dataset_reader_registers_resolve_through_the_module() -> None:
-    """A register stays reachable through the reader, at the precision of its module.
+    """A register stays accessible through the reader, at the precision of its module.
 
-    A schema-built module resolves collectively, as it does when reached directly, so
+    A schema-built module resolves collectively, as it does when accessed directly, so
     the ceiling here is the one :func:`create_device_module` documents. A generated
     package carries its own declarations and resolves each to its own class.
     """
