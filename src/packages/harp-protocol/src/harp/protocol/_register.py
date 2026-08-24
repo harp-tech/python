@@ -192,14 +192,6 @@ class RegisterBase(ABC, Generic[U], metaclass=_RegisterBaseMeta):
                 f"which is not a whole number of {cls.payload_type!r} elements "
                 f"({element_size} byte(s))."
             )
-        # TODO: a declared ``length`` of 1 is treated as unset: neither kept nor checked.
-        # Upstream types ``length`` as an integer with ``minimum: 1`` and no ``null``
-        # (harp-tech/protocol, schema/registers.json), so nothing in the ecosystem can say
-        # "unset" as a value. A schema omitting it and a schema declaring 1 reach us
-        # identically, and neither says anything a single-element payload does not already
-        # say. Arrayness comes from the payload instead: a sub-array dtype is an array
-        # however few elements it spans. Revisit if upstream gains a null, at which point
-        # a declared 1 would mean something and could be both kept and checked.
         declared: int | None = cls.__dict__.get("length")
         if declared == 1:
             declared = None
