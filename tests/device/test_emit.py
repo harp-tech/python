@@ -137,6 +137,62 @@ def test_enum_names_match_generator_for_every_enum(device_registers):
 
 
 # ---------------------------------------------------------------------------
+# The declared length decides whether a register is an array
+# ---------------------------------------------------------------------------
+
+_LENGTH_YML = """
+registers:
+  Absent: {address: 32, type: U16, access: Read}
+  One: {address: 33, type: U16, length: 1, access: Read}
+  Three: {address: 34, type: U16, length: 3, access: Read}
+"""
+
+
+def test_absent_length_emits_scalar_register():
+    # A register with no declared length holds a single value.
+    reg = create_registers(_LENGTH_YML)["Absent"]
+    assert reg.length is None
+    assert reg.payload_class.payload_dtype.shape == ()
+
+
+@pytest.mark.parametrize("name, count", [("One", 1), ("Three", 3)])
+def test_declared_length_emits_array_register(name, count):
+    # Any declared length means an array, 1 included. Reading a declared 1 as a single value
+    # gives the same type as declaring nothing, and the generator would then disagree.
+    reg = create_registers(_LENGTH_YML)[name]
+    assert reg.length == count
+    assert reg.payload_class.payload_dtype.shape == (count,)
+    values = np.arange(count, dtype=np.uint16)
+    np.testing.assert_array_equal(reg.parse(HarpMessage.parse(reg.format(values))), values)
+
+
+def test_multi_element_struct_register_decodes_through_message():
+    # A struct register declares no length, so decode has to size its payload from the
+    # payload class.
+    reg = create_registers(
+        "registers:\n"
+        "  Settings:\n"
+        "    address: 32\n"
+        "    type: U16\n"
+        "    length: 3\n"
+        "    access: Write\n"
+        "    payloadSpec:\n"
+        "      Gain: {offset: 0}\n"
+        "      Offset: {offset: 1}\n"
+        "      Threshold: {offset: 2}\n"
+    )["Settings"]
+    payload = reg.payload_class(gain=1, offset=2, threshold=3)
+    decoded = HarpMessage.parse(reg.format(payload)).decode(reg)
+    assert (int(decoded.payload.gain), int(decoded.payload.threshold)) == (1, 3)
+
+
+def test_core_string_register_decodes_through_message():
+    # DeviceName spans 25 U8 elements, so the same defect reached every Harp device.
+    frame = core.DeviceName.format("Behavior")
+    assert HarpMessage.parse(frame).decode(core.DeviceName).payload == "Behavior"
+
+
+# ---------------------------------------------------------------------------
 # Core registers: the emitter and the generated package, from the same core.yml
 # ---------------------------------------------------------------------------
 

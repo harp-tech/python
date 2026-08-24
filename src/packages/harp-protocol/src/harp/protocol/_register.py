@@ -18,6 +18,7 @@ from ._constants import (
 from ._message import HarpMessage, HarpParseError
 from ._message_type import MessageType, message_type_to_byte
 from ._payload import (
+    AnonymousPayload,
     Batch,
     PayloadBase,
     PayloadFloat,
@@ -149,7 +150,9 @@ class RegisterBase(ABC, Generic[U], metaclass=_RegisterBaseMeta):
       ``BitMask`` or ``GroupMask``, even though each still has a ``payload_class``.
 
     Subclasses must define ``address``, ``payload_type``, and
-    ``payload_class`` as ``ClassVar``s.
+    ``payload_class`` as ``ClassVar``s. Only an array register declares ``length``, which
+    sizes its payload. The extent of a payload is always read from ``payload_class``,
+    never from ``length``.
     """
 
     address: ClassVar[int]
@@ -435,32 +438,36 @@ class RegisterFloat(RegisterBase[np.float32], metaclass=_ScalarRegisterMeta):
 
 
 class _ArrayRegisterMeta(_RegisterBaseMeta):
-    """A base metaclass for array registers. Calling with address and length creates a concrete subclass: ``RegisterU16Array(0x28, length=3)``."""
+    """A declared ``length`` sizes the payload, and calling a register base with an address
+    and a length creates a one-off subclass: ``RegisterU16Array(0x28, length=3)``."""
+
+    length: int | None
+    payload_class: type[AnonymousPayload[Any]]
+
+    def __init__(
+        cls, name: str, bases: tuple[type, ...], namespace: dict[str, Any], **kwargs: Any
+    ) -> None:
+        super().__init__(name, bases, namespace, **kwargs)
+        # The namespace holds this class body only, not inherited values, so a plain
+        # subclass reads None and keeps the payload already sized by its base.
+        length = namespace.get("length")
+        if length is None:
+            return
+        base_payload = cls.payload_class
+        if base_payload.payload_dtype.subdtype is not None:
+            raise TypeError(f"{name} redeclares a length already applied by its base class.")
+        # A sub-array dtype, so reading one buffer element gives an ndarray of that shape.
+        cls.payload_class = type(
+            f"{base_payload.__name__}_{length}",
+            (base_payload,),
+            {"payload_dtype": np.dtype((base_payload.payload_dtype, (length,)))},
+        )
 
     def __call__(cls: "type[_AR]", address: int, *, length: int) -> "type[_AR]":  # type: ignore[override, misc]
         _require_no_address(cls)
-        base_payload = cls.payload_class  # type: ignore[attr-defined]
-        # Anonymous payloads carry a plain (non-structured) dtype. The array
-        # variant uses a sub-dtype (inner_dtype, (length,)) so a single buffer
-        # element decodes directly to an ndarray of shape (length,).
-        inner = base_payload.payload_dtype
-        sub_dtype = np.dtype((inner, (length,)))
-        concrete_payload = type(
-            f"{base_payload.__name__}_{length}",
-            (base_payload,),
-            {"payload_dtype": sub_dtype},
-        )
         return cast(
             "type[_AR]",
-            type(
-                f"{cls.__name__}_{address:#04x}",
-                (cls,),
-                {
-                    "address": address,
-                    "length": length,
-                    "payload_class": concrete_payload,
-                },
-            ),
+            type(f"{cls.__name__}_{address:#04x}", (cls,), {"address": address, "length": length}),
         )
 
 

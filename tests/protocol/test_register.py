@@ -293,6 +293,31 @@ def test_array_register_format_write():
     assert msg.payload_bytes == values.tobytes()
 
 
+def test_declared_length_sizes_array_payload():
+    # The generator declares an array register by subclassing, with length in the class body.
+    # Inheriting the one-element base payload reads the first element and discards the rest.
+    class Attenuation(RegisterU16Array):
+        address: ClassVar[int] = 0x22
+        length: ClassVar[int] = 3
+
+    called = RegisterU16Array(0x22, length=3)
+    assert Attenuation.payload_class.payload_dtype == called.payload_class.payload_dtype
+    values = np.array([10, 20, 30], dtype=np.uint16)
+    assert list(Attenuation.parse(_parse_frame(called.format(values)))) == [10, 20, 30]
+
+
+def test_array_subclass_inherits_sized_payload():
+    reg = RegisterU16Array(0x22, length=3)
+    assert type("Aux", (reg,), {}).payload_class is reg.payload_class
+
+
+def test_redeclared_length_raises_type_error():
+    # Sizing an already-sized payload would nest the sub-arrays.
+    reg = RegisterU16Array(0x22, length=3)
+    with pytest.raises(TypeError, match="redeclares a length"):
+        type("Wider", (reg,), {"length": 4})
+
+
 def test_array_register_parse_roundtrip():
     reg = RegisterU32Array(0x08, length=3)
     values = np.array([10, 20, 30], dtype=np.dtype("<u4"))

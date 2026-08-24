@@ -343,7 +343,7 @@ class _Emitter:
     def _default(self, member: PayloadMember, type_name: str, ctx: ConverterContext) -> Any:
         """The typed default value of the field, or ``_NO_DEFAULT`` when it has none."""
         _default_value = member.defaultValue if member.defaultValue is not None else member.minValue
-        if _default_value is None or (member.length or 0) > 1:
+        if _default_value is None or ctx.length > 1:
             return _NO_DEFAULT
         value = float(_default_value.root)
         group_mask = self._find_mask(type_name)
@@ -367,8 +367,8 @@ class _Emitter:
         # ``key`` stays the verbatim yml name: it feeds ``ConverterContext.name``, and
         # a custom converter symbol is derived from the pre-rename key ("Data" ->
         # "DataConverter"). The renamed attribute name is applied by the caller.
-        elem_np = _ELEMENT[reg.type]
-        elem_size = np.dtype(elem_np).itemsize
+        elem = np.dtype(_ELEMENT[reg.type])
+        elem_size = elem.itemsize
         offset = member.offset or 0
         it = member.interfaceType.root if member.interfaceType else None
         type_name = it or (member.maskType.root if member.maskType else "")
@@ -377,7 +377,7 @@ class _Emitter:
             interface_type=it,
             mask=member.mask,
             length=member.length or 0,
-            element=np.dtype(elem_np),
+            element=elem,
             element_size=elem_size,
         )
         default = self._default(member, type_name, ctx)
@@ -416,8 +416,8 @@ class _Emitter:
 
     def _new_payload(self, class_name: str, owner: str, reg: Register) -> type:
         elem_np = _ELEMENT[reg.type]
-        elem_size = np.dtype(elem_np).itemsize
-        length = reg.length or 1
+        elem = np.dtype(elem_np)
+        elem_size = elem.itemsize
 
         if reg.payloadSpec is not None:
             renamed = self._rename("field", owner, reg.payloadSpec, field_name, reserved=True)
@@ -425,7 +425,7 @@ class _Emitter:
                 renamed[key]: self._build_field(key, member, reg)
                 for key, member in reg.payloadSpec.items()
             }
-            kwds = {"length": length} if length > 1 else {}
+            kwds = {"length": reg.length} if reg.length is not None else {}
             return _new_class(class_name, (StructPayload[elem_np],), namespace, kwds)
 
         # anonymous single-value payload
@@ -451,8 +451,8 @@ class _Emitter:
                 name="__value__",
                 interface_type=it,
                 mask=None,
-                length=length,
-                element=np.dtype(elem_np),
+                length=reg.length or 0,
+                element=elem,
                 element_size=elem_size,
             )
             descriptor = Field(self._resolve_converter(ctx))
@@ -464,7 +464,6 @@ class _Emitter:
         return f"_{name}" if reg.visibility is Visibility.private else name
 
     def _build_register(self, name: str, class_name: str, reg: Register) -> type[RegisterBase[Any]]:
-        length = reg.length or 1
         it = reg.interfaceType.root if reg.interfaceType else None
 
         # A plain scalar/array register needs no payload wrapper: its whole value is a
@@ -475,8 +474,8 @@ class _Emitter:
             and reg.converter is None
             and _is_native(it)
         ):
-            if length > 1:  # plain array register
-                cls = _ARRAY_REGISTER[reg.type](reg.address, length=length)
+            if reg.length is not None:  # plain array register
+                cls = _ARRAY_REGISTER[reg.type](reg.address, length=reg.length)
                 cls.__name__ = cls.__qualname__ = class_name
                 return cls
             return _new_class(class_name, (_SCALAR_REGISTER[reg.type],), {"address": reg.address})

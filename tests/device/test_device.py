@@ -176,3 +176,21 @@ def test_error_reply_returned_when_not_raising():
         reply = device.read(core.WhoAmI)
     assert reply.has_error
     assert int(reply.payload) == 7
+
+
+def test_read_multi_element_register_returns_payload():
+    # read decodes the reply through the register, so a payload of several elements has to
+    # survive that step.
+    transport = _ScriptedTransport()
+    transport.on_write = lambda _: (
+        core.DeviceName.format("Behavior", message_type=MessageType.Read),
+    )
+    with _ShortTimeoutDevice(transport) as device:
+        assert device.read(core.DeviceName).payload == "Behavior"
+
+
+def test_write_multi_element_register_returns_payload():
+    transport = _ScriptedTransport()
+    transport.on_write = lambda data: (data,)  # a device echoing the write
+    with _ShortTimeoutDevice(transport) as device:
+        assert device.write(core.DeviceName, "Behavior").payload == "Behavior"
