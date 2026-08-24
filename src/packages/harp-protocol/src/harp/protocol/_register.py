@@ -149,16 +149,13 @@ class RegisterBase(ABC, Generic[U], metaclass=_RegisterBaseMeta):
       or ``RegisterBase[ClockConfigurationFlags]`` for a whole-register
       ``BitMask`` or ``GroupMask``, even though each still has a ``payload_class``.
 
-    Subclasses must define ``address``, ``payload_type``, and
-    ``payload_class`` as ``ClassVar``s. Only an array register declares ``length``, which
-    sizes its payload. The extent of a payload is always read from ``payload_class``,
-    never from ``length``.
+    Subclasses must define ``address``, ``payload_type``, and ``payload_class`` as
+    ``ClassVar``s. The extent of a payload is always read from ``payload_class``.
     """
 
     address: ClassVar[int]
     payload_type: ClassVar[PayloadType]
     payload_class: ClassVar[type[PayloadBase[Any]]]
-    length: ClassVar[int | None] = None
 
     @classmethod
     def parse(cls, value: HarpMessage | bytes | bytearray | memoryview) -> U:
@@ -439,9 +436,13 @@ class RegisterFloat(RegisterBase[np.float32], metaclass=_ScalarRegisterMeta):
 
 class _ArrayRegisterMeta(_RegisterBaseMeta):
     """A declared ``length`` sizes the payload, and calling a register base with an address
-    and a length creates a one-off subclass: ``RegisterU16Array(0x28, length=3)``."""
+    and a length creates a one-off subclass: ``RegisterU16Array(0x28, length=3)``.
 
-    length: int | None
+    ``length`` is declared here rather than on ``RegisterBase``, so only an array register
+    carries one. It is the element count, and nothing reads it to size a payload.
+    """
+
+    length: int
     payload_class: type[AnonymousPayload[Any]]
 
     def __init__(

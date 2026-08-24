@@ -149,9 +149,9 @@ registers:
 
 
 def test_absent_length_emits_scalar_register():
-    # A register with no declared length holds a single value.
+    # A register with no declared length holds a single value, and carries no length at all.
     reg = create_registers(_LENGTH_YML)["Absent"]
-    assert reg.length is None
+    assert not hasattr(reg, "length")
     assert reg.payload_class.payload_dtype.shape == ()
 
 
