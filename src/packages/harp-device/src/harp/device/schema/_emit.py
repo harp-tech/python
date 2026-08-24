@@ -104,14 +104,14 @@ class ConverterContext:
     name: str  # yml field key ("__value__" for a whole-register value)
     interface_type: Optional[str]  # the DSL interfaceType (None = raw/native)
     mask: Optional[int]  # bit mask, when the value is bit-packed
-    length: int  # element count this value spans (0 = unset -> scalar)
+    length: int  # register elements this value spans, at least one
     element: np.dtype  # base element dtype of the register, from PayloadType
     element_size: int  # base element byte size of the register
 
     @property
     def span(self) -> int:
-        """Byte span of the value (element count * element size)."""
-        return max(1, self.length) * self.element_size
+        """Byte span of the value, its element count times the element size."""
+        return self.length * self.element_size
 
     @property
     def member_dtype(self) -> np.dtype:
@@ -376,7 +376,7 @@ class _Emitter:
             name=key,
             interface_type=it,
             mask=member.mask,
-            length=member.length or 0,
+            length=member.length or 1,
             element=elem,
             element_size=elem_size,
         )
@@ -425,7 +425,7 @@ class _Emitter:
                 renamed[key]: self._build_field(key, member, reg)
                 for key, member in reg.payloadSpec.items()
             }
-            kwds = {"length": reg.length} if reg.length is not None else {}
+            kwds = {"length": reg.length}
             return _new_class(class_name, (StructPayload[elem_np],), namespace, kwds)
 
         # anonymous single-value payload
@@ -451,7 +451,7 @@ class _Emitter:
                 name="__value__",
                 interface_type=it,
                 mask=None,
-                length=reg.length or 0,
+                length=reg.length or 1,
                 element=elem,
                 element_size=elem_size,
             )
