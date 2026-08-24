@@ -79,6 +79,8 @@ nav:
     - Subscribing to Events: examples/subscribing_to_events/subscribing_to_events.md
     - Reading a Whole Dataset Folder: examples/read_dataset/read_dataset.md
     - Reading Data into a DataFrame: examples/read_data_to_dataframe/read_data_to_dataframe.md
+  - Articles:
+    - Migrating from harp-python: articles/migrating_from_harp_python.md
   - API:
     - Protocol: api/protocol.md
     - Serial: api/serial.md
