@@ -30,4 +30,4 @@ np.uint16(65535) + 1   # RuntimeWarning: overflow encountered in scalar add
 
 Numpy scalars behave like plain Python numbers in arithmetic, comparison and formatting. Use `int()` or `float()` where a built-in type is required.
 
-It carries no transport or device logic. See [`harp-device`](../harp-device) for the device layer.
+It carries no transport or device logic. See [`harp-device`](https://github.com/harp-tech/python/tree/main/src/packages/harp-device) for the device layer.

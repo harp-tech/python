@@ -38,10 +38,10 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://harp-tech.org/"
-Repository = "https://github.com/harp-tech/pyharp/"
-Documentation = "https://harp-tech.org/pyharp/"
-"Bug Tracker" = "https://github.com/harp-tech/pyharp/issues"
-Changelog = "https://github.com/harp-tech/pyharp/releases"
+Repository = "https://github.com/harp-tech/python/"
+Documentation = "https://harp-tech.org/python/"
+"Bug Tracker" = "https://github.com/harp-tech/python/issues"
+Changelog = "https://github.com/harp-tech/python/releases"
 
 [build-system]
 requires = ["setuptools>=77", "setuptools-scm>=8"]

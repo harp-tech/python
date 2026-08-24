@@ -5,11 +5,34 @@ description = "Library with the base types for Harp protocol usage."
 authors = [{ name = "harp-tech", email = "contact@harp-tech.org" }]
 license = "MIT"
 keywords = ['python', 'harp']
+license-files = ["LICENSE"]
+readme = 'README.md'
 requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: System :: Hardware :: Hardware Drivers",
+]
 dependencies = [
     "numpy>=1.24",
     "typing-extensions>=4.14",
 ]
+
+[project.urls]
+Homepage = "https://harp-tech.org/"
+Repository = "https://github.com/harp-tech/python/"
+Documentation = "https://harp-tech.org/python/"
+"Bug Tracker" = "https://github.com/harp-tech/python/issues"
+Changelog = "https://github.com/harp-tech/python/releases"
 
 [build-system]
 requires = ["setuptools>=77", "setuptools-scm>=8"]

@@ -1,6 +1,6 @@
 # harp-serial
 
-Serial transport for [`harp-device`](../harp-device). Provides `SerialTransport` and the `open_device` factory, which pairs a device module or a `Device` class with a serial port. This is the package that pulls in `pyserial`.
+Serial transport for [`harp-device`](https://github.com/harp-tech/python/tree/main/src/packages/harp-device). Provides `SerialTransport` and the `open_device` factory, which pairs a device module or a `Device` class with a serial port. This is the package that pulls in `pyserial`.
 
 ## Usage
 

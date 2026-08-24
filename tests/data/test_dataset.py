@@ -468,7 +468,7 @@ def test_schema_without_whoami_skips_check(dataset, device_yml):
 
 
 def test_unmodellable_schema_skips_check(dataset, device_yml):
-    # Well-formed YAML that pyharp cannot describe, such as a newer or older revision,
+    # Well-formed YAML that this library cannot describe, such as a newer or older revision,
     # must not stop a module that works from decoding the binaries beside it.
     _mod, _name, root, specs = dataset
     (root / "device.yml").write_text("registers: [this is not a register map]\n")

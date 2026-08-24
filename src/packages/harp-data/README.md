@@ -1,6 +1,6 @@
 # harp-data
 
-Load Harp register data into pandas DataFrames. This is the package that pulls in `pandas`. [`harp-protocol`](../harp-protocol) stays numpy-only and exposes a pandas-free `ColumnData` view that this package assembles into a DataFrame.
+Load Harp register data into pandas DataFrames. This is the package that pulls in `pandas`. [`harp-protocol`](https://github.com/harp-tech/python/tree/main/src/packages/harp-protocol) stays numpy-only and exposes a pandas-free `ColumnData` view that this package assembles into a DataFrame.
 
 There are two ways in, depending on what is on disk:
 
@@ -19,7 +19,7 @@ A Harp acquisition is usually saved as a de-multiplexed folder, one binary file 
  ┗ 📜 device.yml
 ```
 
-Reading is based on a [device module](../harp-device) that describes how to decode each register. `open_dataset` supplies one automatically. It finds the `device.yml` in the folder, builds the module, and returns a ready-to-use reader:
+Reading is based on a [device module](https://github.com/harp-tech/python/tree/main/src/packages/harp-device) that describes how to decode each register. `open_dataset` supplies one automatically. It finds the `device.yml` in the folder, builds the module, and returns a ready-to-use reader:
 
 ```python
 from harp import data

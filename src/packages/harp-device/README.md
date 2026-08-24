@@ -1,6 +1,6 @@
 # harp-device
 
-The transport-agnostic device layer for the Harp protocol: the common Harp registers and a `Device` base that handles framing, request/reply and register access. It depends only on [`harp-protocol`](../harp-protocol), with no transport dependencies. Pair it with a transport such as [`harp-serial`](../harp-serial).
+The transport-agnostic device layer for the Harp protocol: the common Harp registers and a `Device` base that handles framing, request/reply and register access. It depends only on [`harp-protocol`](https://github.com/harp-tech/python/tree/main/src/packages/harp-protocol), with no transport dependencies. Pair it with a transport such as [`harp-serial`](https://github.com/harp-tech/python/tree/main/src/packages/harp-serial).
 
 ## Read/write registers
 

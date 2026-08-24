@@ -1,6 +1,7 @@
 site_name: harp
-repo_url: https://github.com/harp-tech/pyharp
-repo_name: "harp-tech/pyharp"
+site_url: https://harp-tech.org/python/
+repo_url: https://github.com/harp-tech/python
+repo_name: "harp-tech/python"
 copyright: Copyright (c) harp-tech and Contributors
 
 exclude_docs: |
@@ -87,7 +88,7 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/harp-tech/pyharp
+      link: https://github.com/harp-tech/python
 
 extra_css:
 - stylesheets/extra.css

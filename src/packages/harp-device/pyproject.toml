@@ -2,12 +2,37 @@
 name = "harp-device"
 dynamic = ["version"]
 description = "Transport-agnostic Harp device protocol layer"
+authors = [{ name = "harp-tech", email = "contact@harp-tech.org" }]
+license = "MIT"
+license-files = ["LICENSE"]
+readme = 'README.md'
 requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: System :: Hardware :: Hardware Drivers",
+]
 dependencies = [
     "harp-protocol",
     "pydantic>=2",
     "pydantic-yaml>=1",
 ]
+
+[project.urls]
+Homepage = "https://harp-tech.org/"
+Repository = "https://github.com/harp-tech/python/"
+Documentation = "https://harp-tech.org/python/"
+"Bug Tracker" = "https://github.com/harp-tech/python/issues"
+Changelog = "https://github.com/harp-tech/python/releases"
 
 [build-system]
 requires = ["setuptools>=77", "setuptools-scm>=8"]

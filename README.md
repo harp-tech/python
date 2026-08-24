@@ -1,18 +1,18 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/harp-tech/pyharp/c0c8c23cc1a965c41834a106fe686be76c2f0520/docs/assets/logo.svg" alt="Harp logo" width="400">
+  <img src="https://raw.githubusercontent.com/harp-tech/python/c0c8c23cc1a965c41834a106fe686be76c2f0520/docs/assets/logo.svg" alt="Harp logo" width="400">
 </p>
 
 # harp
 
 This project includes four main packages:
 
- - **harp-protocol**: Provides the core protocol definitions and utilities for the Harp protocol. See [Protocol API Documentation](https://harp-tech.org/pyharp/api/protocol) for details.
+ - **harp-protocol**: Provides the core protocol definitions and utilities for the Harp protocol. See [Protocol API Documentation](https://harp-tech.org/python/api/protocol) for details.
 
- - **harp-serial**: Implements serial communication functionalities for generic Harp devices. See [Serial API Documentation](https://harp-tech.org/pyharp/api/serial) for more information.
+ - **harp-serial**: Implements serial communication functionalities for generic Harp devices. See [Serial API Documentation](https://harp-tech.org/python/api/serial) for more information.
 
- - **harp-device**: Implements the transport-agnostic `Device` interface, the common register map, and the shared registers and enums. See [Device API Documentation](https://harp-tech.org/pyharp/api/device) for details.
+ - **harp-device**: Implements the transport-agnostic `Device` interface, the common register map, and the shared registers and enums. See [Device API Documentation](https://harp-tech.org/python/api/device) for details.
 
- - **harp-data**: Parses register binary dumps into pandas DataFrames. See [Data API Documentation](https://harp-tech.org/pyharp/api/data) for more information.
+ - **harp-data**: Parses register binary dumps into pandas DataFrames. See [Data API Documentation](https://harp-tech.org/python/api/data) for more information.
 
 ## Installation
 
@@ -100,7 +100,7 @@ AnalogData = behavior.AnalogData                 # registers are reached by name
 assert behavior.REGISTER_MAP[44] is AnalogData   # or by address
 ```
 
-See the [Examples](https://harp-tech.org/pyharp/examples/) for the full walkthroughs, including subscribing to device events and working with custom interface-type converters.
+See the [Examples](https://harp-tech.org/python/examples/) for the full walkthroughs, including subscribing to device events and working with custom interface-type converters.
 
 ## Contributing
 
