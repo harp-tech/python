@@ -119,7 +119,7 @@ def test_register_and_payload_class_names_stay_verbatim(device_registers):
 
 
 def test_enum_names_match_generator_for_every_enum(device_registers):
-    """Every enum the reference module declares has identical members in the emitter."""
+    # Every enum the reference module declares has identical members in the emitter.
     for name, reg in _device_registers().items():
         payload = reg.payload_class
         if payload.payload_dtype.names is None:
@@ -163,7 +163,7 @@ def test_core_register_structural(name, core_yml):
 
 
 # ---------------------------------------------------------------------------
-# Behavioural round-trips
+# Behavioral round-trips
 # ---------------------------------------------------------------------------
 
 
@@ -240,7 +240,7 @@ def test_undeclared_bit_mask_resolves_to_core():
     assert _value_enum(regs["ResetFlow"]) is core.ResetFlags
 
 
-def test_reused_core_mask_roundtrips_as_the_core_type():
+def test_reused_core_mask_roundtrips_as_core_type():
     # Identity matters more than equal members: a value read through a runtime module
     # must satisfy isinstance against the same enum a generated package would use.
     regs = create_registers(CORE_MASKS_YML)
@@ -497,7 +497,7 @@ def test_field_name_taking_reserved_prefix_raises(key):
 
 @pytest.mark.parametrize("key", ["Break", "Class", "Return"])
 def test_field_name_renaming_to_keyword_raises(key):
-    # `Break` renames to `break`, which is only reachable through getattr and is a
+    # `Break` renames to `break`, which is only accessible through getattr and is a
     # syntax error in a statically generated module.
     with pytest.raises(NameCollisionError, match="is a Python keyword"):
         create_registers(_one_field_schema(key))

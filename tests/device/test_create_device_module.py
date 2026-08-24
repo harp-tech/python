@@ -67,12 +67,12 @@ def test_docstring_absent_when_undeclared(test_module):
     assert test_module.__doc__ is None
 
 
-def test_registers_are_reachable_by_name(test_module):
+def test_registers_are_accessible_by_name(test_module):
     assert test_module.AnalogData.address == 33
     assert test_module.EncoderMode.address == 103
 
 
-def test_registers_are_reachable_by_address(test_module):
+def test_registers_are_accessible_by_address(test_module):
     reg_map = test_module.REGISTER_MAP
     assert reg_map[33].__name__ == "AnalogData"
     assert reg_map[103].__name__ == "EncoderMode"
@@ -86,7 +86,7 @@ def test_register_map_spreads_core(test_module):
 
 
 def test_core_registers_are_not_named_by_module(test_module):
-    # A common register has one definition, in harp.device, so a device module does
+    # A core register has one definition, in harp.device, so a device module does
     # not re-export it. It is still in the address space the device can send from.
     assert not hasattr(test_module, "WhoAmI")
     assert test_module.REGISTER_MAP[0] is WhoAmI
@@ -113,7 +113,7 @@ def test_generated_package_matches_device_protocol():
     assert isinstance(expected_device, DeviceModuleLike)
 
 
-def test_common_registers_are_not_device_module():
+def test_core_registers_are_not_device_module():
     # They carry REGISTER_MAP but describe no device, so they cannot be passed
     # where a device module is required, such as to a DatasetReader.
     assert hasattr(harp.device.core, "REGISTER_MAP")
@@ -137,7 +137,7 @@ def test_named_registers_are_subset_of_address_space(test_module):
 
 
 def test_device_register_overrides_core_on_clash():
-    # A device register at a common address replaces it in the address space.
+    # A device register at a core address replaces it in the address space.
     mod = create_device_module(
         "device: Clash\nregisters:\n  Shadow: {address: 0, type: U32, access: Read}\n"
     )
@@ -162,13 +162,13 @@ def test_all_covers_declarations_and_module_constants(test_module):
     assert {"REGISTER_MAP", "WHO_AM_I"} <= exported
     assert {"AnalogData", "EncoderMode"} <= exported
     assert {"EncoderModeMask", "AnalogDataPayload"} <= exported
-    assert "WhoAmI" not in exported  # a common register is not re-exported
+    assert "WhoAmI" not in exported  # a core register is not re-exported
     assert exported - MODULE_CONSTANTS == {
         n for n in vars(test_module) if not n.startswith("_") and n not in MODULE_CONSTANTS
     }
 
 
-def test_all_matches_the_generated_package(test_module):
+def test_all_matches_generated_package(test_module):
     # expected_device is generator output for the same schema, so this pins that both
     # paths publish exactly the same surface, not merely equivalent registers.
     assert set(test_module.__all__) == set(expected_device.__all__)
@@ -176,7 +176,7 @@ def test_all_matches_the_generated_package(test_module):
 
 def test_reused_core_masks_are_not_named_by_module():
     # A reused mask has one definition, in harp.device.core, so a device module resolves
-    # registers against it without naming it, as it does for the common registers.
+    # registers against it without naming it, as it does for the core registers.
     mod = create_device_module(
         "device: CoreMasks\n"
         "registers:\n"

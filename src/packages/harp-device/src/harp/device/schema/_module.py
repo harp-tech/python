@@ -3,7 +3,7 @@
 A generated device package is already a module: register classes at module level
 and a ``REGISTER_MAP`` beside them (see the ``harp-device`` README).
 :func:`create_device_module` builds that same shape at runtime from a ``device.yml``, so a
-schema-driven device and a generated one are reached the same way, by name from the
+schema-driven device and a generated one are accessed the same way, by name from the
 module or by address through ``REGISTER_MAP``.
 """
 
@@ -25,7 +25,7 @@ class DeviceModuleLike(Protocol):
 
     A generated device package is a plain module, so it cannot be named by a class;
     what identifies it is describing a device. Matching structurally accepts both it
-    and :class:`DeviceModule`, and rejects the common register set, which carries
+    and :class:`DeviceModule`, and rejects the core register set, which carries
     registers but is not a device.
 
     ``DEVICE_NAME`` is required rather than optional, so a generated package always
@@ -41,7 +41,7 @@ class DeviceModuleLike(Protocol):
 class DeviceModule(types.ModuleType):
     """The type of the module returned by :func:`create_device_module`.
 
-    The declarations of the schema are reached by name and typed ``Any``, since they
+    The declarations of the schema are accessed by name and typed ``Any``, since they
     exist only at runtime. ``DEVICE_NAME``, ``REGISTER_MAP``, ``WHO_AM_I`` and
     ``__all__`` are declared here and carry their own types.
     """
@@ -53,7 +53,7 @@ class DeviceModule(types.ModuleType):
     """The device identity declared by the schema. ``0`` when absent."""
 
     REGISTER_MAP: dict[int, type[RegisterBase[Any]]]
-    """Address -> register class, the common Harp registers merged with those of the schema."""
+    """Address -> register class, the core Harp registers merged with those of the schema."""
 
     __all__: list[str]
     """The declarations of the schema, beside ``REGISTER_MAP`` and ``WHO_AM_I``."""
@@ -71,12 +71,12 @@ def create_device_module(
     The module names what the schema declares, its registers beside the enums and
     payload classes they are built from, so ``behavior.AnalogData``,
     ``behavior.AnalogDataPayload`` and ``behavior.EncoderModeMask`` all resolve while a
-    common register such as ``WhoAmI`` is imported from :mod:`harp.device.core`, keeping
+    core register such as ``WhoAmI`` is imported from :mod:`harp.device.core`, keeping
     one definition of each. This is the same set a generated device package holds. A
     name describing two declarations is rejected rather than shadowed. Beside them
     it holds:
 
-    * ``REGISTER_MAP``, the device address space, so the common registers are
+    * ``REGISTER_MAP``, the device address space, so the core registers are
       present here even though the module does not name them;
     * ``WHO_AM_I``, the identity declared by the schema (``0`` for an unregistered device);
     * ``DEVICE_NAME``, the ``device`` name of the schema, or ``name`` when given, and
@@ -90,11 +90,11 @@ def create_device_module(
     Because the names come from the schema at runtime they don't autocomplete, and
     each resolves as ``Any`` rather than its own type. A generated device package is
     a real module on disk and gives both. On an address clash the device register
-    replaces the common one in ``REGISTER_MAP``.
+    replaces the core one in ``REGISTER_MAP``.
 
     ``text`` is the schema itself rather than a path to it, matching
     :func:`parse_device_schema`, so read the file first. The module is **not**
-    registered in :data:`sys.modules`, so it cannot be reached by ``import`` and two
+    registered in :data:`sys.modules`, so it cannot be imported and two
     schemas may share a name without clashing. Bind it yourself::
 
         behavior = create_device_module(Path("device.yml").read_bytes())

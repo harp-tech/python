@@ -17,11 +17,11 @@ from harp.device import core
 reader = data.open_dataset("session.harp")
 
 # Read one register into a DataFrame by register class, which covers any register
-# in the device map, including common ones such as `OperationControl`.
+# in the device map, including core ones such as `OperationControl`.
 df = reader.read(core.OperationControl)
 
 # A register can also be read by name. Names resolve through the device register
-# map rather than the module namespace, so common registers are reachable too.
+# map rather than the module namespace, so core registers are accessible too.
 df = reader.read("OperationControl")
 
 # Or by address. The Harp time becomes the DataFrame index, named "Time",

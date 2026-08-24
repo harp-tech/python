@@ -70,17 +70,17 @@ theme:
         name: Switch to system preference
 
 nav:
-  - Home: index.md
+  - Introduction: index.md
   - Examples:
-    - examples/index.md
-    - Generating Registers from a Schema: examples/create_device_module/create_device_module.md
-    - Getting Device Info: examples/get_info/get_info.md
-    - Read and Write from Registers: examples/read_and_write_from_registers/read_and_write_from_registers.md
-    - Subscribing to Events: examples/subscribing_to_events/subscribing_to_events.md
-    - Reading a Whole Dataset Folder: examples/read_dataset/read_dataset.md
-    - Reading Data into a DataFrame: examples/read_data_to_dataframe/read_data_to_dataframe.md
-  - Articles:
-    - Migrating from harp-python: articles/migrating_from_harp_python.md
+    - Read device info: examples/device-info.md
+    - Read and write registers: examples/read-write-registers.md
+    - Subscribe to events: examples/events.md
+    - Read a dataset folder: examples/dataset.md
+    - Read a single register file: examples/register-file.md
+    - Registers from a schema: examples/registers-from-schema.md
+  - Guides:
+    - Choose a device module: articles/device-modules.md
+    - Migrate from harp-python: articles/harp-python-migration.md
   - API:
     - Protocol: api/protocol.md
     - Serial: api/serial.md

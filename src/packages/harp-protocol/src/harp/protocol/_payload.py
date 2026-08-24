@@ -885,7 +885,7 @@ class PayloadBase(Generic[NpStructT]):
         Struct payloads always return a typed wrapper so descriptors like
         ``payload.Channel0`` work. Anonymous payloads override this to return the
         raw numpy scalar or ndarray directly, or, for an ``AnonymousPayload`` root,
-        the unwrapped ``__value__`` through the single-member branch below, reached
+        the unwrapped ``__value__`` through the single-member branch below, entered
         via the ``super()`` call of the override. A struct payload never auto-unwraps.
         """
         obj = cls._from_array(arr)

@@ -2,7 +2,7 @@
 
 Every pair below is taken from the committed expected output of the generator
 (``tests/ExpectedOutput/{core,device}.py`` against ``tests/Metadata/{core,device}.yml``),
-so these lock the port to the C# behaviour rather than to a re-derivation of it.
+so these lock the port to the C# behavior rather than to a re-derivation of it.
 """
 
 import pytest

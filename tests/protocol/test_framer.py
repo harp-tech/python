@@ -42,7 +42,7 @@ def test_garbage_between_messages():
 
 
 def test_bad_checksum_skipped_recovery():
-    """A frame with a bad checksum should be skipped; the next valid frame parses."""
+    # A frame with a bad checksum should be skipped; the next valid frame parses.
     bad = bytearray(make_frame_from_raw(0x01, 8, 0xFF, 0x04, b""))
     bad[-1] ^= 0xFF  # corrupt checksum
     good = make_frame_from_raw(0x02, 10, 0xFF, 0x01, b"\x05")
@@ -59,7 +59,7 @@ def test_truncated_stream_returns_empty():
 
 
 def test_incremental_feed():
-    """Feeding data in small chunks still yields the complete message."""
+    # Feeding data in small chunks still yields the complete message.
     frame = make_frame_from_raw(0x02, 10, 0xFF, 0x01, b"\x42")
     framer = HarpFramer()
     results = []
@@ -71,7 +71,7 @@ def test_incremental_feed():
 
 
 def test_all_scalar_types():
-    """Framer correctly parses messages with each PayloadType."""
+    # Framer correctly parses messages with each PayloadType.
     from harp.protocol._payload_type import PayloadType, encode_payload_type
 
     for pt in PayloadType:

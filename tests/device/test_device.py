@@ -30,7 +30,7 @@ class _NullTransport:
 class _ScriptedTransport:
     """A transport replying with whatever ``on_write`` returns for each request.
 
-    Frames are queued from inside ``write``, which is reached only once the request is
+    Frames are queued from inside ``write``, which runs only once the request is
     registered, so a reply cannot be dispatched before there is a waiter to receive it.
     Setting ``failing`` makes the next read fail, as a removed port would.
     """
@@ -74,14 +74,14 @@ def _module(name: str, **attrs: object) -> types.ModuleType:
     return mod
 
 
-def test_whoami_of_zero_skips_the_check():
+def test_zero_whoami_skips_validation():
     # 0 marks an unregistered device, so opening must not read WhoAmI at all.
     device = Device(_NullTransport(), _module("Unregistered", WHO_AM_I=0, REGISTER_MAP={}))
     with device:
         assert device.module.WHO_AM_I == 0
 
 
-def test_module_is_returned_by_the_property():
+def test_module_property_returns_given_module():
     module = _module("Behavior", WHO_AM_I=0, REGISTER_MAP={})
     assert Device(_NullTransport(), module).module is module
     assert Device(_NullTransport()).module is None
@@ -155,7 +155,7 @@ def test_read_after_transport_failure_raises_transport_error():
             device.read(core.WhoAmI)
         with pytest.raises(TransportError):
             device.read(core.WhoAmI)
-    assert len(transport.writes) == 1  # the second request never reached the transport
+    assert len(transport.writes) == 1  # the second request was never written to the transport
 
 
 def test_error_reply_raises_device_error():

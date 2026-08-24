@@ -65,7 +65,7 @@ class DatasetReader(Generic[M]):
     map. ``validate`` turns off every check the reader performs, so a folder whose
     ``device.yml`` is damaged can be read with a module obtained elsewhere.
 
-    The reader is typed on the module it was given, so registers stay reachable through
+    The reader is typed on the module it was given, so registers stay accessible through
     :attr:`device_module` at whatever precision that module offers.
 
     File resolution defaults to the Harp file format: ``<name>_<address>.bin`` and,
@@ -111,7 +111,7 @@ class DatasetReader(Generic[M]):
 
         A generated package resolves each register to its own class; one built by
         :func:`~harp.device.schema.create_device_module` resolves them collectively,
-        the same ceiling as reaching it directly.
+        the same ceiling as accessing it directly.
         """
         return self._device_module
 
@@ -173,7 +173,7 @@ class DatasetReader(Generic[M]):
 
         ``register`` is a register class, a register name, or an address. Names are
         resolved through the device register map rather than the module namespace, which
-        declares no common registers. Prefer the class where a generated package supplies
+        declares no core registers. Prefer the class where a generated package supplies
         one, since it is the only form a type checker can verify. A module built by
         :func:`~harp.device.schema.create_device_module` resolves its registers as
         ``Any``, so there the generated module verifies no more than the name does.

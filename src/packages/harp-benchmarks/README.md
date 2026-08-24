@@ -11,7 +11,7 @@
 | `src/harp/benchmarks/register_models.py` | Reference models for every device.yml register, with fixtures shared with the acceptance tests. |
 | `src/harp/benchmarks/_registers.py` | Registry: each register plus a representative sample value, and artifact paths. |
 | `src/harp/benchmarks/generate.py` | Writes `./benchmark/data/<Name>_<addr>.bin`, and exposes a cache-aware `ensure_corpus`. |
-| `src/harp/benchmarks/benchmark.py` | Ensures corpora exist, then times `parse_bulk`, `parse_to_dataframe`, `payload_as_columns`; writes `./benchmark/report.md`. |
+| `src/harp/benchmarks/benchmark.py` | Ensures corpora exist, then times `parse_bulk`, `parse_to_dataframe`, `payload_as_columns`. Writes `./benchmark/report.md`. |
 
 All generated artifacts, both corpora and report, are written under **`./benchmark`** in the current working directory, git-ignored and fully regenerable.
 
@@ -42,7 +42,7 @@ Equivalent module invocations: `uv run python -m harp.benchmarks.benchmark` / `u
 `parse_bulk` and `parse_to_dataframe` are each timed in two modes:
 
 - **pre-read**, file read once up front, so only deserialization is timed. This isolates library speed.
-- **re-read**, file re-read from disk on every run, the real-world "load a dump" path, which includes disk.
+- **re-read**, file re-read from disk on every run, the real-world "load a log file" path, which includes disk.
 
 The report also decomposes `parse_to_dataframe` into `parse_bulk` plus `payload_as_columns` plus pandas overhead.
 

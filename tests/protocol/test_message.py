@@ -11,7 +11,7 @@ from tests.fixtures import TIMESTAMP_1S, make_frame_from_raw
 
 
 def test_parse_read_request():
-    """Read request: no payload, no timestamp."""
+    # Read request: no payload, no timestamp.
     frame = make_frame_from_raw(0x01, address=8, port=0xFF, payload_type=0x04, payload=b"")
     msg = HarpMessage.parse(frame)
     assert msg.message_type == MessageType.Read
@@ -109,7 +109,7 @@ def _u8_frame():
     )
 
 
-def test_decode_attaches_without_touching_the_frame():
+def test_decode_attaches_payload_over_same_frame():
     typed = _u8_frame().decode(RegisterU8(0x0A))
     assert typed.has_payload is True
     assert typed.payload == 5
@@ -117,21 +117,21 @@ def test_decode_attaches_without_touching_the_frame():
     assert typed.address == 10
 
 
-def test_decode_leaves_the_source_undecoded():
+def test_decode_leaves_source_undecoded():
     # The dispatch loop hands one frame to several places, so decoding must not mutate it.
     msg = _u8_frame()
     msg.decode(RegisterU8(0x0A))
     assert msg.has_payload is False
 
 
-def test_decode_rejects_a_payload_type_mismatch():
+def test_decode_rejects_payload_type_mismatch():
     # Without the check the register reads the low bytes at its own width and returns a
     # silently wrong value, which is what parse does on its own.
     with pytest.raises(HarpParseError, match="declares"):
         _u8_frame().decode(RegisterU16(0x0A))
 
 
-def test_decode_accepts_a_register_at_another_address():
+def test_decode_accepts_register_at_another_address():
     # The payload type decides whether these bytes can be read as this register at all.
     # The address says which register the device meant, so an identical layout decodes
     # either way and a frame can be read through more than one register.
