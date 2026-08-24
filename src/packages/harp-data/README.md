@@ -95,3 +95,5 @@ from harp import data
 
 data.to_file(AnalogData, values, "AnalogData.bin", timestamps=seconds)
 ```
+
+`harp-data` is released as open source under the [MIT license](https://github.com/harp-tech/python/blob/main/LICENSE). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/harp-tech/python).

@@ -30,4 +30,20 @@ np.uint16(65535) + 1   # RuntimeWarning: overflow encountered in scalar add
 
 Numpy scalars behave like plain Python numbers in arithmetic, comparison and formatting. Use `int()` or `float()` where a built-in type is required.
 
+## Reading an address no schema describes
+
+A register class is normally declared with its address, as above, or generated from a `device.yml`. Calling a register base with an address instead builds a one-off register for that address, which is how a payload outside any schema is read and written:
+
+```python
+from harp.protocol import RegisterU8Array, RegisterU16
+
+uid = RegisterU8Array(0x10, length=16)   # R_UID, named by no schema
+tag = RegisterU8Array(0x11, length=16)   # R_TAG, the firmware git hash
+version = RegisterU16(0x08)              # any address, as a scalar
+```
+
+The result is an ordinary register, so it goes through `read` and `write` on a device exactly as a declared one does. `length` is keyword-only for the array form, and it is the element count rather than a byte count. An already-addressed register rejects the call, so `WhoAmI(44)` raises rather than quietly producing a register at another address.
+
 It carries no transport or device logic. See [`harp-device`](https://github.com/harp-tech/python/tree/main/src/packages/harp-device) for the device layer.
+
+`harp-protocol` is released as open source under the [MIT license](https://github.com/harp-tech/python/blob/main/LICENSE). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/harp-tech/python).

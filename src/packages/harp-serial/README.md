@@ -17,3 +17,5 @@ with serial.open_device(behavior, port="COM3") as device:
 ```
 
 Passing a device module validates the device identity on open. Pass a `Device` subclass instead to preserve its own type, or omit the argument entirely for schema-free access, which skips the identity check.
+
+`harp-serial` is released as open source under the [MIT license](https://github.com/harp-tech/python/blob/main/LICENSE). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/harp-tech/python).
