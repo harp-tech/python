@@ -198,6 +198,70 @@ def test_struct_masked_members_roundtrip(device_registers):
     assert int(parsed.pulse_width) == 300
 
 
+def test_multi_element_register_decodes_through_a_message():
+    # https://github.com/harp-tech/python/issues/36: an emitted register reported no
+    # length, so decode -- the Device.read/write path -- rejected its own frames.
+    regs = create_registers(
+        "registers:\n"
+        "  Settings:\n"
+        "    address: 32\n"
+        "    type: U16\n"
+        "    length: 3\n"
+        "    access: Write\n"
+        "    payloadSpec:\n"
+        "      Gain: {offset: 0}\n"
+        "      Offset: {offset: 1}\n"
+        "      Threshold: {offset: 2}\n"
+    )
+    reg = regs["Settings"]
+    assert reg.length == 3
+    payload = reg.payload_class(gain=1, offset=2, threshold=3)
+    decoded = HarpMessage.parse(reg.format(payload)).decode(reg)
+    assert (int(decoded.payload.gain), int(decoded.payload.threshold)) == (1, 3)
+
+
+def test_register_spanning_elements_without_length_decodes_through_a_message():
+    # Same failure without a declared length: the payloadSpec offsets set the width.
+    regs = create_registers(
+        "registers:\n"
+        "  Combo:\n"
+        "    address: 33\n"
+        "    type: U16\n"
+        "    access: Read\n"
+        "    payloadSpec:\n"
+        "      Alpha: {offset: 0}\n"
+        "      Beta: {offset: 1}\n"
+    )
+    reg = regs["Combo"]
+    assert reg.length == 2
+    payload = reg.payload_class(alpha=7, beta=9)
+    decoded = HarpMessage.parse(reg.format(payload)).decode(reg)
+    assert (int(decoded.payload.alpha), int(decoded.payload.beta)) == (7, 9)
+
+
+def test_declared_length_of_one_collapses_to_none():
+    base = (
+        "registers:\n"
+        "  R:\n"
+        "    address: 40\n"
+        "    type: U8\n"
+        "    access: Read\n"
+    )  # fmt: skip
+    omitted = create_registers(base)["R"]
+    declared = create_registers(base + "    length: 1\n")["R"]
+    assert omitted.length is None
+    assert declared.length is None
+    assert declared.payload_class.payload_dtype == omitted.payload_class.payload_dtype
+    assert declared.payload_class.payload_dtype.shape == ()  # scalar, not a 1-elem array
+
+
+def test_core_multi_element_register_decodes_through_a_message():
+    # DeviceName carries 25 U8 elements, so this broke on every Harp device.
+    assert core.DeviceName.length == 25
+    decoded = HarpMessage.parse(core.DeviceName.format("Behavior")).decode(core.DeviceName)
+    assert decoded.payload == "Behavior"
+
+
 def test_custom_converter_roundtrip(device_registers):
     reg = device_registers["CustomMemberConverter"]
     payload_cls = reg.payload_class

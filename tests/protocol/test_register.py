@@ -31,6 +31,7 @@ from harp.protocol._register import (
     RegisterS32,
     RegisterS64,
     RegisterU8,
+    RegisterU8Array,
     RegisterU16,
     RegisterU16Array,
     RegisterU32,
@@ -282,6 +283,106 @@ def test_array_register_factory_different_lengths_independent():
     r2 = RegisterU32Array(0x08, length=4)
     assert r1.length != r2.length
     assert r1.payload_class is not r2.payload_class
+
+
+def test_multi_element_struct_register_derives_length():
+    # https://github.com/harp-tech/python/issues/36: a register reporting no length for
+    # a multi-element payload parses fine, but HarpMessage.decode rejects its own frames.
+    assert AnalogData.length == 3
+    sample = np.array([(100, 512, -200)], dtype=AnalogDataPayload.payload_dtype)
+    decoded = _parse_frame(AnalogData.format(sample)).decode(AnalogData)
+    assert int(decoded.payload.encoder) == 512
+
+
+def test_multi_byte_single_value_register_derives_length():
+    from harp.protocol._payload import AnonymousPayload
+    from harp.protocol._payload_converters import StringConverter
+
+    class PayloadDeviceName(AnonymousPayload[np.uint8]):
+        __value__: str = Field(StringConverter(25))
+
+    class DeviceName(RegisterBase[str]):
+        address: ClassVar[int] = 12
+        payload_type: ClassVar[PayloadType] = PayloadType.U8
+        payload_class = PayloadDeviceName
+
+    assert DeviceName.length == 25
+    decoded = _parse_frame(DeviceName.format("Behavior")).decode(DeviceName)
+    assert decoded.payload == "Behavior"
+
+
+def test_scalar_register_derives_no_length():
+    # A single element stays None, the "one value" contract decode() reads.
+    assert RegisterU16(0x20).length is None
+    assert DigitalOutputSet.length is None
+
+
+def test_array_register_length_survives_derivation():
+    # Array registers declare their own length; it agrees with the sub-array dtype.
+    reg = RegisterU32Array(0x08, length=3)
+    assert reg.length == 3
+    assert reg.payload_class.payload_dtype.itemsize == 3 * 4
+
+
+def test_one_element_array_register_reports_a_length_from_its_dtype():
+    # A one-element array and a scalar span the same byte, so the sub-array dtype is
+    # what tells them apart rather than the count.
+    reg = RegisterU8Array(0x20, length=1)
+    scalar = RegisterU8(0x20)
+    assert reg.payload_class.payload_dtype.itemsize == scalar.payload_class.payload_dtype.itemsize
+    assert reg.payload_class.payload_dtype.shape == (1,)
+    assert scalar.payload_class.payload_dtype.shape == ()
+    assert reg.length == 1
+    assert scalar.length is None
+    # decode() reads (length or 1), so either way the frame round-trips
+    frame = reg.format(np.array([7], dtype=np.uint8))
+    np.testing.assert_array_equal(_parse_frame(frame).decode(reg).payload, [7])
+
+
+def test_subclassing_a_one_element_array_register_keeps_it_an_array():
+    # The subclass declares nothing, so the dtype has to carry the arrayness.
+    reg = RegisterU8Array(0x20, length=1)
+    sub = type("SubArrayRegister", (reg,), {})
+    assert sub.length == 1
+
+
+def test_declared_length_of_one_on_a_scalar_payload_normalizes_to_none():
+    # A declared 1 says nothing a single-element payload does not; see the TODO in
+    # RegisterBase._derive_length.
+    class DeclaredOne(RegisterBase[np.uint8]):
+        address: ClassVar[int] = 35
+        payload_type: ClassVar[PayloadType] = PayloadType.U8
+        payload_class = PayloadU8
+        length: ClassVar[int | None] = 1
+
+    assert DeclaredOne.length is None
+
+
+def test_declared_length_must_be_a_positive_count():
+    with pytest.raises(TypeError, match="declares length=0"):
+
+        class ZeroLength(RegisterBase[np.uint8]):
+            address: ClassVar[int] = 35
+            payload_type: ClassVar[PayloadType] = PayloadType.U8
+            payload_class = PayloadU8
+            length: ClassVar[int | None] = 0
+
+
+def test_derive_length_measures_in_payload_type_elements():
+    assert AnalogDataPayload._elem_dtype == np.dtype(np.uint8)
+    assert AnalogDataPayload.payload_dtype.itemsize == 6
+    assert AnalogData._derive_length() == 3
+
+
+def test_declared_length_contradicting_payload_is_rejected():
+    # A wrong declaration fails at class creation, not at the first decode.
+    with pytest.raises(TypeError, match="declares length=2 but payload"):
+
+        class Mismatched(RegisterBase[AnalogDataPayload]):
+            address: ClassVar[int] = 34
+            payload_type: ClassVar[PayloadType] = PayloadType.S16
+            payload_class = AnalogDataPayload
+            length: ClassVar[int | None] = 2
 
 
 def test_array_register_format_write():

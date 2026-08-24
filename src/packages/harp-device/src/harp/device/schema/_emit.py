@@ -489,6 +489,7 @@ class _Emitter:
                 "address": reg.address,
                 "payload_type": ProtoPayloadType[reg.type.name],
                 "payload_class": payload_cls,
+                "length": reg.length,
             },
         )
 

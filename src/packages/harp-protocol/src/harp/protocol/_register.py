@@ -149,13 +149,66 @@ class RegisterBase(ABC, Generic[U], metaclass=_RegisterBaseMeta):
       ``BitMask`` or ``GroupMask``, even though each still has a ``payload_class``.
 
     Subclasses must define ``address``, ``payload_type``, and
-    ``payload_class`` as ``ClassVar``s.
+    ``payload_class`` as ``ClassVar``s. ``length`` need not be declared: it is derived
+    from ``payload_class``, and a subclass that does declare it keeps what it declared.
     """
 
     address: ClassVar[int]
     payload_type: ClassVar[PayloadType]
     payload_class: ClassVar[type[PayloadBase[Any]]]
     length: ClassVar[int | None] = None
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Set ``length`` from ``payload_class``, so the two can never disagree."""
+        super().__init_subclass__(**kwargs)
+        has_payload_class = getattr(cls, "payload_class", None) is not None
+        has_payload_type = getattr(cls, "payload_type", None) is not None
+        if not (has_payload_class and has_payload_type):
+            # We may want to remove this in the future (or guard against it).
+            # It is here to allow the creation of intermediate abstract base
+            # classes that don't declare a `payload_class` or `payload_type`.
+            return
+        cls.length = cls._derive_length()
+
+    @classmethod
+    def _derive_length(cls) -> int | None:
+        """How many ``payload_type`` elements ``payload_class`` spans, ``None`` for one.
+
+        The element width comes from ``payload_type`` rather than the payload's own
+        ``_elem_dtype``, since that is what ``HarpMessage.decode`` measures the frame with
+        and the two need not agree. A register declaring its own ``length`` has it checked
+        against the payload but not otherwise trusted: the payload decides, and a
+        sub-array payload counts as an array however few elements it spans, so arrayness
+        comes from the layout rather than from anyone remembering to declare it.
+        """
+        payload_class: type[PayloadBase[Any]] = cls.payload_class
+        payload_dtype: np.dtype = payload_class.payload_dtype
+        itemsize: int = payload_dtype.itemsize
+        element_size: int = np.dtype(cls.payload_type.value).itemsize
+        count, remainder = divmod(itemsize, element_size)
+        if remainder:
+            raise TypeError(
+                f"{cls.__name__}: payload {payload_class.__name__} spans {itemsize} bytes, "
+                f"which is not a whole number of {cls.payload_type!r} elements "
+                f"({element_size} byte(s))."
+            )
+        # TODO: a declared ``length`` of 1 is treated as unset: neither kept nor checked.
+        # Upstream types ``length`` as an integer with ``minimum: 1`` and no ``null``
+        # (harp-tech/protocol, schema/registers.json), so nothing in the ecosystem can say
+        # "unset" as a value. A schema omitting it and a schema declaring 1 reach us
+        # identically, and neither says anything a single-element payload does not already
+        # say. Arrayness comes from the payload instead: a sub-array dtype is an array
+        # however few elements it spans. Revisit if upstream gains a null, at which point
+        # a declared 1 would mean something and could be both kept and checked.
+        declared: int | None = cls.__dict__.get("length")
+        if declared == 1:
+            declared = None
+        if declared is not None and declared != count:
+            raise TypeError(
+                f"{cls.__name__} declares length={declared!r} but payload "
+                f"{payload_class.__name__} spans {count} {cls.payload_type!r} element(s)."
+            )
+        return count if count > 1 or payload_dtype.shape else None
 
     @classmethod
     def parse(cls, value: HarpMessage | bytes | bytearray | memoryview) -> U:
