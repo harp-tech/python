@@ -138,7 +138,7 @@ jobs:
               run: uv sync --group docs
 
             - name: Build documentation
-              run: uv run mkdocs build
+              run: uv run mkdocs build --strict
 
             - name: Collect documentation website artifact
               uses: actions/upload-pages-artifact@v5
