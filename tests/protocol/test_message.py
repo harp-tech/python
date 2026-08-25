@@ -1,9 +1,12 @@
 import struct
+from typing import ClassVar
 
 import numpy as np
 import pytest
 from harp.protocol._message import HarpMessage, HarpParseError
-from harp.protocol._register import RegisterU8, RegisterU16
+from harp.protocol._payload import Field, StructPayload
+from harp.protocol._payload_converters import IdentityConverter
+from harp.protocol._register import RegisterBase, RegisterU8, RegisterU16
 from harp.protocol._message_type import MessageType
 from harp.protocol._payload_type import PayloadType
 
@@ -136,3 +139,31 @@ def test_decode_accepts_register_at_another_address():
     # The address says which register the device meant, so an identical layout decodes
     # either way and a frame can be read through more than one register.
     assert _u8_frame().decode(RegisterU8(0x2A)).payload == 5
+
+
+class _SettingsPayload(StructPayload[np.uint16], length=3):
+    gain: np.uint16 = Field(IdentityConverter(np.uint16))
+    offset: np.uint16 = Field(IdentityConverter(np.uint16), offset=1)
+    threshold: np.uint16 = Field(IdentityConverter(np.uint16), offset=2)
+
+
+class _Settings(RegisterBase[_SettingsPayload]):
+    address: ClassVar[int] = 32
+    payload_type: ClassVar[PayloadType] = PayloadType.U16
+    payload_class: ClassVar = _SettingsPayload
+
+
+def test_decode_accepts_payload_spanning_several_elements():
+    # decode sizes the payload from the payload class, as parse does, so several elements
+    # are not read as one.
+    payload = _SettingsPayload(gain=np.uint16(7), offset=np.uint16(8), threshold=np.uint16(9))
+    typed = HarpMessage.parse(_Settings.format(payload)).decode(_Settings)
+    assert (int(typed.payload.gain), int(typed.payload.threshold)) == (7, 9)
+
+
+def test_decode_rejects_payload_of_wrong_byte_count():
+    # A read request carries no payload, so the count check stops a register reading
+    # past the frame.
+    request = HarpMessage.parse(_Settings.format(message_type=MessageType.Read))
+    with pytest.raises(HarpParseError, match="reads 6 payload bytes but this message carries 0"):
+        request.decode(_Settings)

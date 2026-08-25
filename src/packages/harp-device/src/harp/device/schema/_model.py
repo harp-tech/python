@@ -126,9 +126,10 @@ class PayloadMember(BaseModel):
         None,
         description="The zero-based index at which encoding of this payload member starts.",
     )
-    length: Optional[int] = Field(
-        None, description="The number of elements used to encode this payload member."
-    )
+    length: Annotated[
+        Optional[int],
+        Field(ge=1, description="The number of elements used to encode this payload member."),
+    ] = None
     description: Optional[str] = Field(
         None, description="A summary description of this payload member."
     )
@@ -164,8 +165,8 @@ class Register(BaseModel):
     address: Annotated[int, Field(le=255, description="The unique 8-bit address of the register.")]
     type: PayloadType = Field(..., description="The type of the register payload.")
     length: Annotated[
-        Optional[int], Field(ge=1, default=1, description="The length of the register payload.")
-    ]
+        Optional[int], Field(ge=1, description="The length of the register payload.")
+    ] = None
     access: Union[Access, List[Access]] = Field(
         ..., description="The expected use of the register."
     )

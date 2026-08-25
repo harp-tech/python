@@ -3,7 +3,6 @@
 import struct
 from typing import Any, ClassVar, Generic, Protocol, TypeVar, cast
 
-import numpy as np
 from typing_extensions import Sentinel
 
 from ._builder import build_message_frame
@@ -18,6 +17,7 @@ from ._constants import (
     _TIMESTAMPED_PAYLOAD_OFFSET,
 )
 from ._message_type import MessageType, _message_type_from_byte_safe
+from ._payload import PayloadBase
 from ._payload_type import PayloadType, decode_payload_type
 
 P = TypeVar("P")
@@ -38,14 +38,14 @@ class PayloadDecoder(Protocol[_P_co]):
     """Reads a payload of type ``_P_co`` out of a message.
 
     Structural rather than nominal, so a message never has to know about registers, and
-    anything declaring a payload type, a length and a ``parse`` satisfies it. Every
-    ``RegisterBase`` does. ``length`` is the element count, or ``None`` for a single
-    value, and together with ``payload_type`` it fixes how many payload bytes the
-    decoder consumes.
+    anything declaring a payload type, a payload class and a ``parse`` satisfies it. Every
+    ``RegisterBase`` does. ``payload_class.payload_dtype`` is what fixes how many payload
+    bytes the decoder consumes, and it is the same quantity ``parse`` reads the frame
+    with, so the two cannot disagree about the extent of a payload.
     """
 
     payload_type: ClassVar["PayloadType"]
-    length: ClassVar[int | None]
+    payload_class: ClassVar[type[PayloadBase[Any]]]
 
     @classmethod
     def parse(cls, value: Any) -> _P_co: ...
@@ -187,7 +187,7 @@ class HarpMessage(Generic[P]):
                 f"{decoder.__name__} declares {decoder.payload_type!r} but this "
                 f"message declares {self.payload_type!r}."
             )
-        expected = (decoder.length or 1) * np.dtype(decoder.payload_type.value).itemsize
+        expected = decoder.payload_class.payload_dtype.itemsize
         actual = len(self.payload_bytes)
         if actual != expected:
             raise HarpParseError(

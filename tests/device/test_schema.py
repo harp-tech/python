@@ -1,8 +1,9 @@
 import pytest
 from pydantic import ValidationError
+from pydantic_yaml import to_yaml_str
 
 from harp.device.schema import parse_device_schema
-from harp.device.schema._model import DeviceModel, PayloadType
+from harp.device.schema._model import Access, DeviceModel, PayloadType, Register
 
 
 def test_parse_full_device(device_yml):
@@ -92,3 +93,79 @@ def test_access_list_and_scalar(core_yml):
     c = parse_device_schema(core_yml)
     # TimestampSeconds has a list access [Read, Write, Event]; WhoAmI a scalar.
     assert isinstance(c.registers["TimestampSeconds"].access, list)
+
+
+def test_absent_register_length_stays_absent():
+    # An absent length means a single value. A declared 1 means an array of one element. The
+    # model has to keep them apart.
+    registers = parse_device_schema(
+        "registers:\n"
+        "  Absent: {address: 32, type: U16, access: Read}\n"
+        "  One: {address: 33, type: U16, length: 1, access: Read}\n"
+    ).registers
+    assert registers["Absent"].length is None
+    assert registers["One"].length == 1
+
+
+def test_absent_member_length_stays_absent():
+    members = (
+        parse_device_schema(
+            "registers:\n"
+            "  R:\n"
+            "    address: 32\n"
+            "    type: U8\n"
+            "    length: 4\n"
+            "    access: Read\n"
+            "    payloadSpec:\n"
+            "      Absent: {offset: 0}\n"
+            "      One: {offset: 1, length: 1}\n"
+        )
+        .registers["R"]
+        .payloadSpec
+    )
+    assert members is not None
+    assert members["Absent"].length is None
+    assert members["One"].length == 1
+
+
+@pytest.mark.parametrize(
+    "schema",
+    [
+        "registers:\n  R: {address: 32, type: U16, length: 0, access: Read}\n",
+        "registers:\n"
+        "  R:\n"
+        "    address: 32\n"
+        "    type: U8\n"
+        "    access: Read\n"
+        "    payloadSpec:\n"
+        "      Zero: {offset: 0, length: 0}\n",
+    ],
+    ids=["register", "member"],
+)
+def test_zero_length_is_rejected(schema):
+    # registers.json sets a minimum of 1 at both levels, so 0 is never declared.
+    with pytest.raises(ValidationError):
+        parse_device_schema(schema)
+
+
+def test_serialized_schema_round_trips(device_yml):
+    # An absent length is None, so exclude_none writes a valid device.yml.
+    model = parse_device_schema(device_yml)
+    written = to_yaml_str(model, exclude_none=True)
+    assert "length:" in written  # the declared ones survive
+    for name, register in model.registers.items():
+        if register.length is not None:
+            assert f"length: {register.length}" in written, name
+    assert parse_device_schema(written) == model
+
+
+def test_modified_schema_round_trips(device_yml):
+    # Read, change, write back. A register built in code has no length until one is set.
+    model = parse_device_schema(device_yml)
+    model.registers["DigitalInputs"].length = 4
+    model.registers["Added"] = Register(address=60, type=PayloadType.U16, access=Access.Read)
+    written = to_yaml_str(model, exclude_none=True)
+    reparsed = parse_device_schema(written)
+    assert reparsed.registers["DigitalInputs"].length == 4
+    assert reparsed.registers["Added"].length is None
+    assert reparsed == model
