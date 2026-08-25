@@ -400,28 +400,28 @@ class RegisterU64(RegisterBase[np.uint64], metaclass=_ScalarRegisterMeta):
 
 
 class RegisterS8(RegisterBase[np.int8], metaclass=_ScalarRegisterMeta):
-    """A simple scalar register with a int8 payload. ``parse()`` returns ``np.int8``."""
+    """A simple scalar register with an int8 payload. ``parse()`` returns ``np.int8``."""
 
     payload_type: ClassVar[PayloadType] = PayloadType.S8
     payload_class = PayloadS8
 
 
 class RegisterS16(RegisterBase[np.int16], metaclass=_ScalarRegisterMeta):
-    """A simple scalar register with a int16 payload. ``parse()`` returns ``np.int16``."""
+    """A simple scalar register with an int16 payload. ``parse()`` returns ``np.int16``."""
 
     payload_type: ClassVar[PayloadType] = PayloadType.S16
     payload_class = PayloadS16
 
 
 class RegisterS32(RegisterBase[np.int32], metaclass=_ScalarRegisterMeta):
-    """A simple scalar register with a int32 payload. ``parse()`` returns ``np.int32``."""
+    """A simple scalar register with an int32 payload. ``parse()`` returns ``np.int32``."""
 
     payload_type: ClassVar[PayloadType] = PayloadType.S32
     payload_class = PayloadS32
 
 
 class RegisterS64(RegisterBase[np.int64], metaclass=_ScalarRegisterMeta):
-    """A simple scalar register with a int64 payload. ``parse()`` returns ``np.int64``."""
+    """A simple scalar register with an int64 payload. ``parse()`` returns ``np.int64``."""
 
     payload_type: ClassVar[PayloadType] = PayloadType.S64
     payload_class = PayloadS64
@@ -501,28 +501,28 @@ class RegisterU64Array(RegisterBase[NDArray[np.uint64]], metaclass=_ArrayRegiste
 
 
 class RegisterS8Array(RegisterBase[NDArray[np.int8]], metaclass=_ArrayRegisterMeta):
-    """A simple array register with a int8 array payload. It must be instantiated with a length: ``RegisterS8Array(0x28, length=3)``. ``parse()`` returns ``NDArray[np.int8]``."""
+    """A simple array register with an int8 array payload. It must be instantiated with a length: ``RegisterS8Array(0x28, length=3)``. ``parse()`` returns ``NDArray[np.int8]``."""
 
     payload_type: ClassVar[PayloadType] = PayloadType.S8
     payload_class = PayloadS8Array
 
 
 class RegisterS16Array(RegisterBase[NDArray[np.int16]], metaclass=_ArrayRegisterMeta):
-    """A simple array register with a int16 array payload. It must be instantiated with a length: ``RegisterS16Array(0x28, length=3)``. ``parse()`` returns ``NDArray[np.int16]``."""
+    """A simple array register with an int16 array payload. It must be instantiated with a length: ``RegisterS16Array(0x28, length=3)``. ``parse()`` returns ``NDArray[np.int16]``."""
 
     payload_type: ClassVar[PayloadType] = PayloadType.S16
     payload_class = PayloadS16Array
 
 
 class RegisterS32Array(RegisterBase[NDArray[np.int32]], metaclass=_ArrayRegisterMeta):
-    """A simple array register with a int32 array payload. It must be instantiated with a length: ``RegisterS32Array(0x28, length=3)``. ``parse()`` returns ``NDArray[np.int32]``."""
+    """A simple array register with an int32 array payload. It must be instantiated with a length: ``RegisterS32Array(0x28, length=3)``. ``parse()`` returns ``NDArray[np.int32]``."""
 
     payload_type: ClassVar[PayloadType] = PayloadType.S32
     payload_class = PayloadS32Array
 
 
 class RegisterS64Array(RegisterBase[NDArray[np.int64]], metaclass=_ArrayRegisterMeta):
-    """A simple array register with a int64 array payload. It must be instantiated with a length: ``RegisterS64Array(0x28, length=3)``. ``parse()`` returns ``NDArray[np.int64]``."""
+    """A simple array register with an int64 array payload. It must be instantiated with a length: ``RegisterS64Array(0x28, length=3)``. ``parse()`` returns ``NDArray[np.int64]``."""
 
     payload_type: ClassVar[PayloadType] = PayloadType.S64
     payload_class = PayloadS64Array
