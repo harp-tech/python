@@ -57,6 +57,9 @@ jobs:
         name: Build release distributions
         needs: tests
         if: github.event_name == 'release' && github.event.action == 'published'
+        permissions:
+            # gh release upload attaches the distributions to the release.
+            contents: write
 
         steps:
             - uses: actions/checkout@v7
@@ -89,6 +92,11 @@ jobs:
                   name: dist
                   path: dist/
 
+            - name: Upload release assets
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: gh release upload --repo ${{ github.repository }} ${{ github.event.release.tag_name }} dist/* --clobber
+
     # ---- Publish to PyPI ----
     publish-to-pypi:
         runs-on: ubuntu-latest
@@ -98,8 +106,6 @@ jobs:
         permissions:
             # uv publish exchanges this token with PyPI trusted publishing.
             id-token: write
-            # action-gh-release attaches the distributions to the release.
-            contents: write
         steps:
             - name: Download wheels artifact
               uses: actions/download-artifact@v8
@@ -113,11 +119,6 @@ jobs:
 
             - name: Publish to PyPI
               run: uv publish
-
-            - name: Upload wheels to GitHub release
-              uses: softprops/action-gh-release@v3
-              with:
-                  files: dist/*
 
     # ---- Build docs ----
     build-docs:
