@@ -59,6 +59,8 @@ The `<DeviceName>` prefix comes from the `DEVICE_NAME` declared by the device mo
 
 When a device module declaring an identity is supplied and the folder carries a `device.yml`, their `whoAmI` values are checked against each other. Reusing a module across sessions and opening the wrong folder then fails on construction rather than decoding the files against the wrong register map. Pass `validate=False` to turn off every check the reader performs, so a folder whose `device.yml` is damaged can be read with a module obtained elsewhere.
 
+Recordings are produced by `harp.device.client.attach_writer`, on the other side of the same file format. See the [harp-device README](https://github.com/harp-tech/python/tree/main/src/packages/harp-device).
+
 ## Read a single register file
 
 `parse_to_dataframe` takes a register and a source, either a path, bytes, or an open binary file, and returns one row per frame:

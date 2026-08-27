@@ -7,6 +7,7 @@ from typing import Any, Generic, TypeVar, overload
 
 import pandas as pd
 from harp.device.schema import (
+    DEVICE_SCHEMA_FILENAME,
     DeviceModule,
     DeviceModuleLike,
     create_device_module,
@@ -21,9 +22,6 @@ M = TypeVar("M", bound=DeviceModuleLike)
 RegisterKey = type[RegisterBase[Any]] | int | str
 
 FileNameResolver = Callable[[Path, str], Mapping[int, list[Path]]]
-
-DEVICE_SCHEMA_FILENAME = "device.yml"
-"""Default filename of the device schema looked up inside a dataset folder."""
 
 
 def default_file_resolver(root: Path, name: str) -> dict[int, list[Path]]:
@@ -70,7 +68,7 @@ class DatasetReader(Generic[M]):
 
     File resolution defaults to the Harp file format: ``<name>_<address>.bin`` and,
     when a register was logged as several ``<name>_<address>_<suffix>.bin`` chunks,
-    they are concatenated in filename order. Pass ``resolver`` (a :data:`FileResolver`)
+    they are concatenated in filename order. Pass ``resolver`` (a :data:`FileNameResolver`)
     to support an alternative on-disk layout.
 
     ``epoch`` anchors the time index of every read to absolute time, so one dataset is
