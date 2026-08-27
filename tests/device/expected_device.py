@@ -8,6 +8,7 @@ import numpy as np
 from numpy.typing import NDArray
 from harp.protocol import (
     AnonymousPayload,
+    ArrayConverter,
     BitMask,
     BoolConverter,
     Field,
@@ -19,6 +20,7 @@ from harp.protocol import (
     RegisterBase,
     RegisterS32,
     RegisterU16,
+    RegisterU16Array,
     RegisterU8,
     StringConverter,
     StructPayload,
@@ -44,6 +46,7 @@ __all__ = [
     "CustomMemberConverterPayload",
     "BitmaskSplitterPayload",
     "PortDIOSetPayload",
+    "MixedMemberLengthPayload",
     "StartPulsePayload",
     "StartPulseTrainPayload",
     "EncoderModePayload",
@@ -59,6 +62,9 @@ __all__ = [
     "PortDIOSet",
     "PulseDOPort0",
     "PulseDO0",
+    "MultiElementPayload",
+    "SingleElementPayload",
+    "MixedMemberLength",
     "StartPulse",
     "StartPulseTrain",
     "EncoderMode",
@@ -100,9 +106,7 @@ class AnalogDataPayload(StructPayload[np.float32], length=6):
     analog0: np.float32 = Field(IdentityConverter(np.float32))
     analog1: np.float32 = Field(IdentityConverter(np.float32), offset=1)
     analog2: np.float32 = Field(IdentityConverter(np.float32), offset=2)
-    accelerometer: NDArray[np.float32] = Field(
-        IdentityConverter(np.dtype((np.float32, (3,)))), offset=3
-    )
+    accelerometer: NDArray[np.float32] = Field(ArrayConverter(np.float32, 3), offset=3)
 
 
 class ComplexConfigurationPayload(StructPayload[np.uint8], length=17):
@@ -122,9 +126,7 @@ class VersionPayload(StructPayload[np.uint8], length=32):
     firmware_version: HarpVersion = Field(HarpVersionConverter(np.uint8), offset=3)
     hardware_version: HarpVersion = Field(HarpVersionConverter(np.uint8), offset=6)
     core_id: str = Field(StringConverter(3), offset=9)
-    interface_hash: NDArray[np.uint8] = Field(
-        IdentityConverter(np.dtype((np.uint8, (20,)))), offset=12
-    )
+    interface_hash: NDArray[np.uint8] = Field(ArrayConverter(np.uint8, 20), offset=12)
 
 
 class CustomPayloadPayload(AnonymousPayload[np.uint32]):
@@ -157,6 +159,14 @@ class PortDIOSetPayload(AnonymousPayload[np.uint8]):
     """Represents the payload of the PortDIOSet register."""
 
     __value__: PortDigitalIOS = BitMask(enum=PortDigitalIOS)
+
+
+class MixedMemberLengthPayload(StructPayload[np.uint8], length=4):
+    """Represents the payload of the MixedMemberLength register."""
+
+    absent: np.uint8 = Field(IdentityConverter(np.uint8))
+    single: NDArray[np.uint8] = Field(ArrayConverter(np.uint8, 1), offset=1)
+    multiple: NDArray[np.uint8] = Field(ArrayConverter(np.uint8, 2), offset=2)
 
 
 class StartPulsePayload(StructPayload[np.uint16]):
@@ -247,6 +257,22 @@ class PulseDO0(RegisterU16):
     address: ClassVar[int] = 43
 
 
+class MultiElementPayload(RegisterU16Array):
+    address: ClassVar[int] = 44
+    length: int = 3
+
+
+class SingleElementPayload(RegisterU16Array):
+    address: ClassVar[int] = 45
+    length: int = 1
+
+
+class MixedMemberLength(RegisterBase[MixedMemberLengthPayload]):
+    address: ClassVar[int] = 46
+    payload_type: ClassVar[PayloadType] = PayloadType.U8
+    payload_class = MixedMemberLengthPayload
+
+
 class StartPulse(RegisterBase[StartPulsePayload]):
     """Starts a PWM pulse."""
 
@@ -285,6 +311,9 @@ REGISTER_MAP: dict[int, type[RegisterBase[Any]]] = {
     41: PortDIOSet,
     42: PulseDOPort0,
     43: PulseDO0,
+    44: MultiElementPayload,
+    45: SingleElementPayload,
+    46: MixedMemberLength,
     100: StartPulse,
     101: StartPulseTrain,
     103: EncoderMode,
