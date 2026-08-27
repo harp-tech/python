@@ -574,7 +574,7 @@ def _random_records(dtype, n, seed):
     """
     rng = np.random.default_rng(seed)
     raw = rng.integers(0, 128, size=n * dtype.itemsize, dtype=np.uint8)
-    return raw.view(dtype).copy()
+    return np.frombuffer(raw, dtype=dtype, count=n).copy()
 
 
 @pytest.mark.parametrize("name", sorted(_device_registers()))

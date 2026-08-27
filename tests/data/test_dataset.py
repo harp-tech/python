@@ -21,7 +21,7 @@ def _records(cls, n, seed):
     dtype = cls.payload_class.payload_dtype
     rng = np.random.default_rng(seed)
     raw = rng.integers(0, 128, size=n * dtype.itemsize, dtype=np.uint8)
-    return raw.view(dtype).copy()
+    return np.frombuffer(raw, dtype=dtype, count=n).copy()
 
 
 @pytest.fixture
