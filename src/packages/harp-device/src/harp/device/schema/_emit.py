@@ -44,7 +44,15 @@ from harp.protocol import PayloadType as ProtoPayloadType
 
 from harp.device import core
 
-from ._model import DeviceModel, PayloadMember, PayloadType, Register, Registers, Visibility
+from ._model import (
+    DeviceModel,
+    MaskValueItem,
+    PayloadMember,
+    PayloadType,
+    Register,
+    Registers,
+    Visibility,
+)
 from ._naming import enum_member_name, field_name
 
 
@@ -294,6 +302,27 @@ class _Emitter:
         return renamed
 
     # -- enums ------------------------------------------------------------
+    @staticmethod
+    def _mask_value_doc(value: Any) -> Optional[str]:
+        """The per-value ``description``, when the mask value is the object form."""
+        return value.root.description if isinstance(value.root, MaskValueItem) else None
+
+    @staticmethod
+    def _document_enum(
+        enum_cls: Any, description: Optional[str], docs: Mapping[str, Optional[str]]
+    ) -> None:
+        """Set the enum class ``__doc__`` and every member's.
+
+        Every member is assigned, even ``None``: an ``Enum`` member with no ``__doc__``
+        of its own would otherwise read back the *class* docstring, since attribute
+        lookup falls through to it, which would misrepresent an undocumented member as
+        carrying the mask's own description.
+        """
+        if description is not None:
+            enum_cls.__doc__ = description
+        for member_name, doc in docs.items():
+            getattr(enum_cls, member_name).__doc__ = doc
+
     def _build_enums(self) -> dict[str, Any]:
         # Enum type names stay verbatim; members take the SCREAMING_SNAKE of the generator.
         enums: dict[str, Any] = {}
@@ -301,10 +330,22 @@ class _Emitter:
             # IntFlag has no zero-valued member; drop it if present.
             bits = {k: v for k, v in spec.bits.items() if int(v) != 0}
             renamed = self._rename("bit", name, bits, enum_member_name)
-            enums[name] = enum.IntFlag(name, {renamed[k]: int(v) for k, v in bits.items()})
+            enum_cls = enum.IntFlag(name, {renamed[k]: int(v) for k, v in bits.items()})
+            self._document_enum(
+                enum_cls,
+                spec.description,
+                {renamed[k]: self._mask_value_doc(v) for k, v in bits.items()},
+            )
+            enums[name] = enum_cls
         for name, spec in self.group_masks.items():
             renamed = self._rename("value", name, spec.values, enum_member_name)
-            enums[name] = enum.IntEnum(name, {renamed[k]: int(v) for k, v in spec.values.items()})
+            enum_cls = enum.IntEnum(name, {renamed[k]: int(v) for k, v in spec.values.items()})
+            self._document_enum(
+                enum_cls,
+                spec.description,
+                {renamed[k]: self._mask_value_doc(v) for k, v in spec.values.items()},
+            )
+            enums[name] = enum_cls
         return enums
 
     # -- converter resolution (one uniform factory pipeline) -------------
@@ -388,12 +429,18 @@ class _Emitter:
         if group_mask is not None and issubclass(group_mask, enum.IntEnum):
             full = (1 << (elem_size * 8)) - 1
             mask = member.mask if member.mask is not None else full
-            return GroupMask(enum=group_mask, mask=mask, offset=offset, **default_kwarg)
+            field = GroupMask(enum=group_mask, mask=mask, offset=offset, **default_kwarg)
+            if member.description is not None:
+                field.__doc__ = member.description
+            return field
 
         field_kwargs: dict[str, Any] = {"offset": offset, **default_kwarg}
         if member.mask is not None:
             field_kwargs["mask"] = member.mask
-        return Field(self._resolve_converter(ctx), **field_kwargs)
+        field = Field(self._resolve_converter(ctx), **field_kwargs)
+        if member.description is not None:
+            field.__doc__ = member.description
+        return field
 
     # -- payloads ---------------------------------------------------------
     def _payload_name(self, name: str, reg: Register) -> str:
@@ -477,19 +524,23 @@ class _Emitter:
             if reg.length is not None:  # plain array register
                 cls = _ARRAY_REGISTER[reg.type](reg.address, length=reg.length)
                 cls.__name__ = cls.__qualname__ = class_name
+                if reg.description is not None:
+                    cls.__doc__ = reg.description
                 return cls
-            return _new_class(class_name, (_SCALAR_REGISTER[reg.type],), {"address": reg.address})
+            namespace: dict[str, Any] = {"address": reg.address}
+            if reg.description is not None:
+                namespace["__doc__"] = reg.description
+            return _new_class(class_name, (_SCALAR_REGISTER[reg.type],), namespace)
 
         payload_cls = self._build_payload(name, reg)
-        return _new_class(
-            class_name,
-            (RegisterBase,),
-            {
-                "address": reg.address,
-                "payload_type": ProtoPayloadType[reg.type.name],
-                "payload_class": payload_cls,
-            },
-        )
+        namespace = {
+            "address": reg.address,
+            "payload_type": ProtoPayloadType[reg.type.name],
+            "payload_class": payload_cls,
+        }
+        if reg.description is not None:
+            namespace["__doc__"] = reg.description
+        return _new_class(class_name, (RegisterBase,), namespace)
 
     def emit(self) -> dict[str, type[RegisterBase[Any]]]:
         emitted: dict[str, type[RegisterBase[Any]]] = {}
