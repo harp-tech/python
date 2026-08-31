@@ -430,16 +430,14 @@ class _Emitter:
             full = (1 << (elem_size * 8)) - 1
             mask = member.mask if member.mask is not None else full
             field = GroupMask(enum=group_mask, mask=mask, offset=offset, **default_kwarg)
-            if member.description is not None:
-                field.__doc__ = member.description
+            field.__doc__ = member.description
             return field
 
         field_kwargs: dict[str, Any] = {"offset": offset, **default_kwarg}
         if member.mask is not None:
             field_kwargs["mask"] = member.mask
         field = Field(self._resolve_converter(ctx), **field_kwargs)
-        if member.description is not None:
-            field.__doc__ = member.description
+        field.__doc__ = member.description
         return field
 
     # -- payloads ---------------------------------------------------------
