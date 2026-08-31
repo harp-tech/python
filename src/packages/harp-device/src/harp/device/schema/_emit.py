@@ -311,15 +311,14 @@ class _Emitter:
     def _document_enum(
         enum_cls: Any, description: Optional[str], docs: Mapping[str, Optional[str]]
     ) -> None:
-        """Set the enum class ``__doc__`` and every member's.
+        """Set the enum class ``__doc__`` and every member's, ``None`` included.
 
-        Every member is assigned, even ``None``: an ``Enum`` member with no ``__doc__``
-        of its own would otherwise read back the *class* docstring, since attribute
-        lookup falls through to it, which would misrepresent an undocumented member as
-        carrying the mask's own description.
+        A member is always assigned, even when it has no description: an ``Enum``
+        member with no ``__doc__`` of its own falls back to the *class* docstring via
+        attribute lookup, which would misrepresent it as carrying the mask's own
+        description.
         """
-        if description is not None:
-            enum_cls.__doc__ = description
+        enum_cls.__doc__ = description
         for member_name, doc in docs.items():
             getattr(enum_cls, member_name).__doc__ = doc
 
@@ -522,23 +521,25 @@ class _Emitter:
             if reg.length is not None:  # plain array register
                 cls = _ARRAY_REGISTER[reg.type](reg.address, length=reg.length)
                 cls.__name__ = cls.__qualname__ = class_name
-                if reg.description is not None:
-                    cls.__doc__ = reg.description
+                cls.__doc__ = reg.description
                 return cls
-            namespace: dict[str, Any] = {"address": reg.address}
-            if reg.description is not None:
-                namespace["__doc__"] = reg.description
-            return _new_class(class_name, (_SCALAR_REGISTER[reg.type],), namespace)
+            return _new_class(
+                class_name,
+                (_SCALAR_REGISTER[reg.type],),
+                {"address": reg.address, "__doc__": reg.description},
+            )
 
         payload_cls = self._build_payload(name, reg)
-        namespace = {
-            "address": reg.address,
-            "payload_type": ProtoPayloadType[reg.type.name],
-            "payload_class": payload_cls,
-        }
-        if reg.description is not None:
-            namespace["__doc__"] = reg.description
-        return _new_class(class_name, (RegisterBase,), namespace)
+        return _new_class(
+            class_name,
+            (RegisterBase,),
+            {
+                "address": reg.address,
+                "payload_type": ProtoPayloadType[reg.type.name],
+                "payload_class": payload_cls,
+                "__doc__": reg.description,
+            },
+        )
 
     def emit(self) -> dict[str, type[RegisterBase[Any]]]:
         emitted: dict[str, type[RegisterBase[Any]]] = {}
