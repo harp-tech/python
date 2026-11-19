@@ -3,7 +3,7 @@ import zlib
 import numpy as np
 import pytest
 from harp.data import parse_to_dataframe
-from harp.protocol import GroupMask, HarpMessage
+from harp.protocol import Field, GroupMask, HarpMessage
 
 from harp.device import core
 from harp.device.schema._emit import (
@@ -595,3 +595,134 @@ def test_emitted_register_bulk_matches_oracle(name, device_registers):
     df_oracle = parse_to_dataframe(oracle, buf, time_index=False)
     assert list(df_emitted.columns) == list(df_oracle.columns)
     assert df_emitted.equals(df_oracle)
+
+
+# ---------------------------------------------------------------------------
+# Schema descriptions surfacing as __doc__ on the emitted runtime objects
+# ---------------------------------------------------------------------------
+
+_DESCRIBED_YML = (
+    "registers:\n"
+    "  Scalar:\n"
+    "    address: 40\n"
+    "    type: U16\n"
+    "    access: Read\n"
+    "    description: A scalar register.\n"
+    "  Array:\n"
+    "    address: 41\n"
+    "    type: U16\n"
+    "    length: 2\n"
+    "    access: Read\n"
+    "    description: An array register.\n"
+    "  Undescribed:\n"
+    "    address: 42\n"
+    "    type: U16\n"
+    "    access: Read\n"
+    "  StartPulse:\n"
+    "    address: 100\n"
+    "    type: U16\n"
+    "    access: Write\n"
+    "    description: Starts a PWM pulse.\n"
+    "    payloadSpec:\n"
+    "      DigitalOutput:\n"
+    "        offset: 0\n"
+    "        mask: 0xC00\n"
+    "        maskType: PwmPort\n"
+    "        description: Which output channel drives the pulse.\n"
+    "      PulseWidth:\n"
+    "        offset: 0\n"
+    "        mask: 0x3FF\n"
+    "        interfaceType: ushort\n"
+    "  Indicators:\n"
+    "    address: 43\n"
+    "    type: U8\n"
+    "    access: Write\n"
+    "    maskType: PortDigitalIOS\n"
+    "groupMasks:\n"
+    "  PwmPort:\n"
+    "    description: Which PWM channel is selected.\n"
+    "    values:\n"
+    "      Pwm0:\n"
+    "        value: 0x1\n"
+    "        description: PWM channel 0.\n"
+    "      Pwm1: 0x2\n"
+    "bitMasks:\n"
+    "  PortDigitalIOS:\n"
+    "    description: Bitmask of digital IO ports.\n"
+    "    bits:\n"
+    "      DIO0:\n"
+    "        value: 0x1\n"
+    "        description: Digital output 0.\n"
+    "      DIO1: 0x2\n"
+)
+
+
+@pytest.fixture
+def described_registers():
+    return create_registers(_DESCRIBED_YML)
+
+
+def test_scalar_register_description_becomes_class_doc(described_registers):
+    assert described_registers["Scalar"].__doc__ == "A scalar register."
+
+
+def test_array_register_description_becomes_class_doc(described_registers):
+    assert described_registers["Array"].__doc__ == "An array register."
+
+
+def test_payload_wrapped_register_description_becomes_class_doc(described_registers):
+    assert described_registers["StartPulse"].__doc__ == "Starts a PWM pulse."
+
+
+def test_absent_register_description_leaves_doc_none(described_registers):
+    assert described_registers["Undescribed"].__doc__ is None
+
+
+def test_payload_member_description_becomes_field_doc(described_registers):
+    # DigitalOutput has a maskType, so it is emitted as a GroupMask descriptor.
+    payload_cls = described_registers["StartPulse"].payload_class
+    field = payload_cls.__dict__["digital_output"]
+    assert field.__doc__ == "Which output channel drives the pulse."
+
+
+def test_undescribed_payload_member_does_not_inherit_descriptor_class_doc(described_registers):
+    # Regression: an unset instance __doc__ falls back to the owning class's, which
+    # would misrepresent PulseWidth (no description) as carrying Field's own generic
+    # docstring.
+    payload_cls = described_registers["StartPulse"].payload_class
+    field = payload_cls.__dict__["pulse_width"]
+    assert field.__doc__ is None
+    assert field.__doc__ != Field.__doc__
+
+
+def test_group_mask_type_description_becomes_enum_doc(described_registers):
+    enum_cls = _enum_of(described_registers["StartPulse"], "digital_output")
+    assert enum_cls.__doc__ == "Which PWM channel is selected."
+
+
+def test_bit_mask_type_description_becomes_enum_doc(described_registers):
+    enum_cls = _enum_of(described_registers["Indicators"], "__value__")
+    assert enum_cls.__doc__ == "Bitmask of digital IO ports."
+
+
+def test_bit_mask_value_description_becomes_member_doc(described_registers):
+    enum_cls = _enum_of(described_registers["Indicators"], "__value__")
+    assert enum_cls.DIO0.__doc__ == "Digital output 0."
+
+
+def test_group_mask_value_description_becomes_member_doc(described_registers):
+    enum_cls = _enum_of(described_registers["StartPulse"], "digital_output")
+    assert enum_cls.PWM0.__doc__ == "PWM channel 0."
+
+
+def test_undescribed_bit_mask_value_does_not_inherit_enum_type_doc(described_registers):
+    # Regression: Enum attribute lookup on a member with no __doc__ of its own falls
+    # back to the class __doc__, which would misrepresent DIO1 as carrying the
+    # bitmask's own description once PortDigitalIOS.__doc__ is set.
+    enum_cls = _enum_of(described_registers["Indicators"], "__value__")
+    assert enum_cls.DIO1.__doc__ is None
+
+
+def test_undescribed_group_mask_value_does_not_inherit_enum_type_doc(described_registers):
+    enum_cls = _enum_of(described_registers["StartPulse"], "digital_output")
+    assert enum_cls.PWM1.__doc__ is None
