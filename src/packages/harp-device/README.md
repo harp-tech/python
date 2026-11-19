@@ -25,13 +25,17 @@ A device is described by a module. Downstream, often generated, packages record 
 ```python
 from harp.device.core import REGISTER_MAP as _CORE_REGISTER_MAP
 
+DEVICE_NAME: str = "Behavior"
 WHO_AM_I: int = 1216
+DEVICE_METADATA: bytes = ...  # the device.yml the package was built from
 REGISTER_MAP = {**_CORE_REGISTER_MAP, 32: DigitalInputState, ...}
 ```
 
 This is the same structure `create_device_module` builds from a schema, so a device reads the same way whether it was generated ahead of time or compiled at runtime. A `WHO_AM_I` of `0` marks an unregistered device, used while a device is in development or outside the official registry, and identity checks are skipped for it.
 
 A device module names only what its schema declares, the registers beside the enums and payload classes built from them. The core registers and any core mask reused by the schema have a single definition, in `harp.device.core`, and are accessed from there rather than through the device module. The core register set is not a device, so it carries no `WHO_AM_I`. `REGISTER_MAP` covers the complete device address space, including both core and application registers.
+
+`DEVICE_METADATA` is the `device.yml` the module was built from, as bytes, so the schema travels with the module and a recording can carry a copy of it without the original file being at hand. `DeviceWriter` is what usually reads it, copying it into the folder it records.
 
 Pass the module to `Device`, or to `open_device`, to validate identity on open:
 

@@ -6,6 +6,7 @@
 ::: harp.data.read
 ::: harp.data.DatasetReader
 ::: harp.data.default_file_resolver
+::: harp.data.FileNameResolver
 ::: harp.data.parse_to_dataframe
 ::: harp.data.payload_to_dataframe
 ::: harp.data.to_file

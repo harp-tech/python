@@ -17,7 +17,7 @@ from . import expected_device
 from .converters import DataConverter
 
 CONVERTERS = {"DataConverter": DataConverter()}
-MODULE_CONSTANTS = {"DEVICE_NAME", "REGISTER_MAP", "WHO_AM_I"}
+MODULE_CONSTANTS = {"DEVICE_NAME", "DEVICE_METADATA", "REGISTER_MAP", "WHO_AM_I"}
 
 
 @pytest.fixture

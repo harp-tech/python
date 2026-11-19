@@ -2,6 +2,7 @@
 # To make changes, edit the device metadata and regenerate the interface.
 
 import enum
+from pathlib import Path
 from typing import Any, ClassVar
 
 import numpy as np
@@ -32,6 +33,7 @@ from .converters import (
 
 __all__ = [
     "DEVICE_NAME",
+    "DEVICE_METADATA",
     "WHO_AM_I",
     "PortDigitalIOS",
     "PwmPort",
@@ -67,6 +69,9 @@ __all__ = [
 
 DEVICE_NAME: str = "Tests"
 WHO_AM_I: int = 0
+
+_SCHEMA_PATH = Path(__file__).parent.parent / "assets" / "device.yml"
+DEVICE_METADATA: bytes = _SCHEMA_PATH.read_bytes()
 
 
 class PortDigitalIOS(enum.IntFlag):

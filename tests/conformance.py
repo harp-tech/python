@@ -136,6 +136,7 @@ def open_device_prefers_the_subclass_overload() -> None:
         DEVICE_NAME: ClassVar[str] = "Hybrid"
         WHO_AM_I: ClassVar[int] = 1216
         REGISTER_MAP: ClassVar[dict[int, type[RegisterBase[Any]]]] = {}
+        DEVICE_METADATA: ClassVar[bytes] = b""
 
     device = open_device(Hybrid, port="COM3")
     assert_type(device, Hybrid)

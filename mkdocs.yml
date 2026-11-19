@@ -76,6 +76,7 @@ nav:
     - Read and write registers: examples/read-write-registers.md
     - Subscribe to events: examples/events.md
     - Read a dataset folder: examples/dataset.md
+    - Record a dataset folder: examples/record-dataset.md
     - Read a single register file: examples/register-file.md
     - Registers from a schema: examples/registers-from-schema.md
   - Guides:

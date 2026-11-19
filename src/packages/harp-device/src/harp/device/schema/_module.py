@@ -9,7 +9,6 @@ module or by address through ``REGISTER_MAP``.
 
 import types
 from typing import Any, Mapping, Optional, Protocol, runtime_checkable
-
 from harp.protocol import RegisterBase
 
 from harp.device.core import REGISTER_MAP as CORE_REGISTER_MAP
@@ -17,6 +16,9 @@ from ._emit import ConverterValue, _Emitter, parse_device_schema
 
 _DEFAULT_NAME = "Device"
 """Module name used when the schema carries no ``device`` header."""
+
+DEVICE_SCHEMA_FILENAME = "device.yml"
+"""Conventional name of the schema file, inside a device repository or a recording."""
 
 
 @runtime_checkable
@@ -31,11 +33,16 @@ class DeviceModuleLike(Protocol):
     ``DEVICE_NAME`` is required rather than optional, so a generated package always
     states the name used for its recordings. A schema declaring none still
     builds, since :class:`DeviceModule` declares the member and leaves it empty.
+
+    ``DEVICE_METADATA`` is the ``device.yml`` the module was built from, so the schema
+    travels with the module and can be re-parsed, re-emitted or copied into a recording
+    without the file it came from being at hand.
     """
 
     DEVICE_NAME: str
     WHO_AM_I: int
     REGISTER_MAP: dict[int, type[RegisterBase[Any]]]
+    DEVICE_METADATA: bytes
 
 
 class DeviceModule(types.ModuleType):
@@ -55,8 +62,11 @@ class DeviceModule(types.ModuleType):
     REGISTER_MAP: dict[int, type[RegisterBase[Any]]]
     """Address -> register class, the core Harp registers merged with those of the schema."""
 
+    DEVICE_METADATA: bytes
+    """The ``device.yml`` text this module was built from."""
+
     __all__: list[str]
-    """The declarations of the schema, beside ``REGISTER_MAP`` and ``WHO_AM_I``."""
+    """The declarations of the schema, beside ``REGISTER_MAP``, ``WHO_AM_I`` and ``DEVICE_METADATA``."""
 
 
 def create_device_module(
@@ -82,6 +92,8 @@ def create_device_module(
     * ``DEVICE_NAME``, the ``device`` name of the schema, or ``name`` when given, and
       empty for a header-less register fragment. Recordings are written under this
       name, so :class:`~harp.data.DatasetReader` matches files by it;
+    * ``DEVICE_METADATA``, ``text`` itself as bytes, so the schema travels with the module
+      and a recording can carry a copy of it;
     * ``__name__``, the same name, falling back to ``"Device"`` so the module is never
       anonymous. This names the module rather than the device, and is not part of what
       a device module promises;
@@ -100,6 +112,7 @@ def create_device_module(
         behavior = create_device_module(Path("device.yml").read_bytes())
         behavior.AnalogData
     """
+    schema = text.encode() if isinstance(text, str) else bytes(text)
     device = parse_device_schema(text)
     emitter = _Emitter(device, converters, require_converters)
     registers = emitter.emit()
@@ -119,6 +132,13 @@ def create_device_module(
         DEVICE_NAME=device_name,
         REGISTER_MAP=register_map,
         WHO_AM_I=int(device.whoAmI or 0),
-        __all__=[*sorted(contents), "DEVICE_NAME", "REGISTER_MAP", "WHO_AM_I"],
+        DEVICE_METADATA=schema,
+        __all__=[
+            *sorted(contents),
+            "DEVICE_NAME",
+            "DEVICE_METADATA",
+            "REGISTER_MAP",
+            "WHO_AM_I",
+        ],
     )
     return module
