@@ -127,6 +127,30 @@ registers:
   PulseDO0:
     <<: *pulseDO
     address: 43
+  MultiElementPayload:
+    address: 44
+    type: U16
+    length: 3
+    access: Write
+  SingleElementPayload:
+    address: 45
+    type: U16
+    length: 1
+    access: Write
+  MixedMemberLength:
+    address: 46
+    type: U8
+    length: 4
+    access: Write
+    payloadSpec:
+      Absent:
+        offset: 0
+      Single:
+        offset: 1
+        length: 1
+      Multiple:
+        offset: 2
+        length: 2
   StartPulse:
     address: 100
     type: U16

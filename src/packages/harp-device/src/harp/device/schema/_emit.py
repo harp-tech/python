@@ -104,14 +104,14 @@ class ConverterContext:
     name: str  # yml field key ("__value__" for a whole-register value)
     interface_type: Optional[str]  # the DSL interfaceType (None = raw/native)
     mask: Optional[int]  # bit mask, when the value is bit-packed
-    length: int  # register elements this value spans, at least one
+    length: Optional[int]  # declared element count; None when the schema declares none
     element: np.dtype  # base element dtype of the register, from PayloadType
     element_size: int  # base element byte size of the register
 
     @property
     def span(self) -> int:
         """Byte span of the value, its element count times the element size."""
-        return self.length * self.element_size
+        return (self.length or 1) * self.element_size
 
     @property
     def member_dtype(self) -> np.dtype:
@@ -124,8 +124,8 @@ class ConverterContext:
 
     @property
     def raw_dtype(self) -> np.dtype:
-        """Native passthrough dtype, a sub-array when the value spans more than one element."""
-        if self.length > 1:
+        """Native passthrough dtype, a sub-array when the schema declares an element count."""
+        if self.length is not None:
             return np.dtype((self.element.type, (self.length,)))
         return self.element
 
@@ -319,7 +319,7 @@ class _Emitter:
         if ctx.mask is not None:
             return IdentityConverter(ctx.member_dtype)  # bit-field: native slice of the element
         if it is None:
-            if ctx.length > 1:
+            if ctx.length is not None:
                 return ArrayConverter(ctx.element, ctx.length)  # raw passthrough, sub-array
             return IdentityConverter(ctx.element)  # raw passthrough, single element
         # A known primitive that didn't fit is re-interpreted per field (``{Name}Converter``);
@@ -343,7 +343,7 @@ class _Emitter:
     def _default(self, member: PayloadMember, type_name: str, ctx: ConverterContext) -> Any:
         """The typed default value of the field, or ``_NO_DEFAULT`` when it has none."""
         _default_value = member.defaultValue if member.defaultValue is not None else member.minValue
-        if _default_value is None or ctx.length > 1:
+        if _default_value is None or ctx.length is not None:
             return _NO_DEFAULT
         value = float(_default_value.root)
         group_mask = self._find_mask(type_name)
@@ -376,7 +376,7 @@ class _Emitter:
             name=key,
             interface_type=it,
             mask=member.mask,
-            length=member.length or 1,
+            length=member.length,
             element=elem,
             element_size=elem_size,
         )
@@ -451,7 +451,7 @@ class _Emitter:
                 name="__value__",
                 interface_type=it,
                 mask=None,
-                length=reg.length or 1,
+                length=reg.length,
                 element=elem,
                 element_size=elem_size,
             )
