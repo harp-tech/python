@@ -1,4 +1,3 @@
-import warnings
 from typing import Any
 
 import numpy as np
@@ -19,7 +18,6 @@ def decode_timecode_from_transitions(
     states: ArrayLike,
     *,
     baud_rate: float = DEFAULT_BAUD_RATE,
-    max_drift: float | None = 0.1,
 ) -> pd.DataFrame:
     """Decode a Harp Time Code from line transitions.
 
@@ -28,13 +26,11 @@ def decode_timecode_from_transitions(
     level the line took (0 low, 1 high). Returns the whole Harp second of each packet
     (``"Time"``) indexed by the local time of its first falling edge (``"LocalTime"``).
 
-    Packets with bad framing are dropped. ``max_drift`` also drops packets whose seconds
-    disagree with the elapsed local time by more than that fraction, with a warning;
-    pass ``None`` to keep them.
+    Packets with bad framing are dropped; every other packet is returned as decoded, so
+    a clock reset or a corrupt value shows up as an anchor that does not line up.
     """
     times, levels = _as_transitions(timestamps, states)
     local, harp = _decode(times, levels, baud_rate=baud_rate)
-    local, harp = _drop_inconsistent(local, harp, max_drift)
     return _anchor_frame(pd.Index(local, name="LocalTime", dtype=np.float64), harp)
 
 
@@ -44,16 +40,15 @@ def decode_timecode_from_samples(
     *,
     threshold: float | None = None,
     baud_rate: float = DEFAULT_BAUD_RATE,
-    max_drift: float | None = 0.1,
 ) -> pd.DataFrame:
     """Decode a Harp Time Code from a sampled line.
 
     See the [Harp Time Code specification](https://harp-tech.org/protocol/TimeCode.html).
     Sample ``i`` is taken at local time ``i / sample_rate``. Samples are binarized as
     ``samples >= threshold``; by default the threshold is detected from the data as the
-    midpoint between the high and low levels. Returns the whole Harp
-    second of each packet (``"Time"``) indexed by the sample of its first falling edge
-    (``"Sample"``). See :func:`decode_timecode_from_transitions` for ``max_drift``.
+    midpoint between the high and low levels. Returns the whole Harp second of each packet
+    (``"Time"``) indexed by the sample of its first falling edge (``"Sample"``), filtered
+    as in :func:`decode_timecode_from_transitions`.
     """
     if sample_rate <= 0:
         raise ValueError(f"sample_rate must be positive, got {sample_rate}.")
@@ -69,7 +64,6 @@ def decode_timecode_from_samples(
     edges = np.flatnonzero(np.diff(level)) + 1
     times = edges / sample_rate
     local, harp = _decode(times, level[edges], baud_rate=baud_rate)
-    local, harp = _drop_inconsistent(local, harp, max_drift)
     sample = np.rint(local * sample_rate).astype(np.int64)
     return _anchor_frame(pd.Index(sample, name="Sample"), harp)
 
@@ -196,50 +190,6 @@ def _decode(
         local.append(float(origin))
         harp.append(float(seconds))
     return np.array(local, dtype=np.float64), np.array(harp, dtype=np.float64)
-
-
-def _drop_inconsistent(
-    local: NDArray[np.float64], harp: NDArray[np.float64], max_drift: float | None
-) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-    """Drop anchors whose Harp seconds disagree with the elapsed local time."""
-    if max_drift is None or local.size < 2:
-        return local, harp
-    if max_drift < 0:
-        raise ValueError(f"max_drift must be non-negative, got {max_drift}.")
-
-    def agrees(earlier: int, later: int) -> bool:
-        elapsed_harp = harp[later] - harp[earlier]
-        elapsed_local = local[later] - local[earlier]
-        return bool(
-            elapsed_harp >= 1
-            and abs(elapsed_harp - elapsed_local) <= max_drift * abs(elapsed_local)
-        )
-
-    # grow the longest chain of mutually consistent anchors out of the first agreeing
-    # pair, so that one corrupt value costs one anchor instead of every anchor after it
-    keep = np.zeros(local.size, dtype=np.bool_)
-    seed = next((i for i in range(local.size - 1) if agrees(i, i + 1)), None)
-    if seed is not None:
-        keep[seed] = keep[seed + 1] = True
-        last = seed + 1
-        for candidate in range(seed + 2, local.size):
-            if agrees(last, candidate):
-                keep[candidate] = True
-                last = candidate
-        first = seed
-        for candidate in range(seed - 1, -1, -1):
-            if agrees(candidate, first):
-                keep[candidate] = True
-                first = candidate
-
-    dropped = int(np.count_nonzero(~keep))
-    if dropped:
-        warnings.warn(
-            f"Dropped {dropped} time code packet(s) whose Harp time is inconsistent with "
-            "the local clock. Pass max_drift=None to keep them.",
-            stacklevel=3,
-        )
-    return local[keep], harp[keep]
 
 
 def _anchor_frame(anchors: pd.Index, harp: NDArray[np.float64]) -> pd.DataFrame:

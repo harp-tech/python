@@ -1,5 +1,3 @@
-from contextlib import nullcontext
-
 import numpy as np
 import pytest
 from harp.data.timecode import (
@@ -286,37 +284,18 @@ def test_tolerates_a_baud_rate_error_that_would_slip_a_whole_bit():
     assert clock["Time"].tolist() == values
 
 
-def test_corrupt_packet_is_dropped_with_a_warning():
-    values = [3806874, 3806875, 12345, 3806877]
+def test_corrupt_and_jumping_packets_are_returned_as_decoded():
+    """Framing is the only filter, so a corrupt value or a clock reset is left to the caller."""
+    values = [3806874, 12345, 3806876, 100, 101]
     times, states, starts = transitions(values)
 
-    with pytest.warns(UserWarning, match="inconsistent with the local clock"):
-        clock = decode_timecode_from_transitions(times, states)
-
-    assert clock["Time"].tolist() == [3806874, 3806875, 3806877]
-    assert clock.index.to_numpy() == pytest.approx(np.delete(starts, 2))
-
-
-def test_corrupt_first_packet_is_dropped_with_a_warning():
-    values = [12345, 3806875, 3806876, 3806877]
-    times, states, _ = transitions(values)
-
-    with pytest.warns(UserWarning):
-        clock = decode_timecode_from_transitions(times, states)
-
-    assert clock["Time"].tolist() == values[1:]
-
-
-def test_max_drift_none_keeps_every_decoded_packet():
-    values = [3806874, 3806875, 12345, 3806877]
-    times, states, _ = transitions(values)
-
-    clock = decode_timecode_from_transitions(times, states, max_drift=None)
+    clock = decode_timecode_from_transitions(times, states)
 
     assert clock["Time"].tolist() == values
+    assert clock.index.to_numpy() == pytest.approx(starts)
 
 
-def test_missing_packets_do_not_break_the_chain():
+def test_missing_packets_leave_a_gap():
     values = [3806874, 3806875, 3806876, 3806877]
     times, states, starts = transitions(values)
     dropped = (times < starts[1]) | (times >= starts[2])
@@ -379,11 +358,9 @@ RECORDED = [
             2.98826667, 2.99026667, 2.99126667]),
         "expected_start_times": np.array([0.96106667, 1.96116667]),
         "expected_harp_times": [3806874, 3806875],
-        # the cut-short packet fails its framing check, so nothing reaches the drift check
-        "expected_warning": False,
     },
     {
-        # four valid packets and one corrupt one
+        # four valid packets and one that frames cleanly but carries a corrupt value
         "timestamps": np.array([
             0.14036667, 1.10146667, 1.10246667, 1.10346667, 1.10446667,
             1.11146667, 1.11246667, 1.11646667, 1.11746667, 1.11846667,
@@ -404,30 +381,21 @@ RECORDED = [
             5.1368    , 5.1388    , 5.1398    , 5.14183333, 5.1428    ,
             5.14583333, 5.14783333, 5.14883333, 5.15083333, 5.15183333,
             5.16083333, 6.1059    ]),
-        "expected_start_times": np.array([1.10146667, 2.10156667, 3.10163333, 4.10173333]),
-        "expected_harp_times": [2600957, 2600958, 2600959, 2600960],
-        # the corrupt packet decodes cleanly but its seconds do not add up
-        "expected_warning": True,
+        "expected_start_times": np.array(
+            [1.10146667, 2.10156667, 3.10163333, 4.10173333, 5.1018]
+        ),
+        "expected_harp_times": [2600957, 2600958, 2600959, 2600960, 2955390977],
     },
 ]
 # fmt: on
 
 
-def _decode_recorded(recorded, **kwargs):
-    times = recorded["timestamps"]
-    states = np.resize([1, 0], times.size)  # transitions alternate, starting from high
-    expected = (
-        pytest.warns(UserWarning, match="inconsistent with the local clock")
-        if recorded["expected_warning"]
-        else nullcontext()
-    )
-    with expected:
-        return decode_timecode_from_transitions(times, states, **kwargs)
-
-
 @pytest.mark.parametrize("recorded", RECORDED)
 def test_decodes_a_recorded_time_code(recorded):
-    clock = _decode_recorded(recorded)
+    times = recorded["timestamps"]
+    states = np.resize([1, 0], times.size)  # transitions alternate, starting from high
+
+    clock = decode_timecode_from_transitions(times, states)
 
     assert clock["Time"].tolist() == recorded["expected_harp_times"]
     assert clock.index.to_numpy() == pytest.approx(recorded["expected_start_times"])

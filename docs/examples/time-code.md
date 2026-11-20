@@ -5,7 +5,7 @@ Devices that are not part of the Harp bus run on their own clock, so their times
 Each packet starts exactly on the whole second it carries, so every decoded packet is an anchor: the sample (or local time) of its first falling edge, against the Harp second that begins there.
 
 !!! note
-    The decoded table is a set of anchors, local time → whole Harp second. How timestamps are placed between them is up to you: interpolating between neighbouring anchors absorbs the drift between the two clocks, whereas a global fit trades that away for noise rejection.
+    Every packet that frames cleanly is returned as decoded, including the rare one carrying a corrupt value, and a reset of the Harp clock mid-recording shows up as a jump in the anchors. The example below drops anchors that do not line up with the rest before fitting the offset and drift between the two clocks.
 
 <!--codeinclude-->
 ```python

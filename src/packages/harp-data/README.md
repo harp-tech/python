@@ -102,16 +102,18 @@ import numpy as np
 from harp.data import timecode
 
 anchors = timecode.decode_timecode_from_samples(line, sample_rate=30_000.0)  # Sample -> Time
-harp_times = np.interp(spike_samples, anchors.index, anchors["Time"])
+slope, intercept = np.polyfit(anchors.index, anchors["Time"], 1)
+harp_times = intercept + slope * spike_samples
 
 # event-based systems report transitions instead, so anchors carry local seconds
 anchors = timecode.decode_timecode_from_transitions(edge_times, edge_states)  # LocalTime -> Time
-harp_times = np.interp(spike_times, anchors.index, anchors["Time"])
 ```
 
-Packets that fail their start/stop bit check, or whose seconds do not add up
-against the local clock, are dropped, so a glitched packet costs one anchor, not
-the alignment around it.
+Packets that fail their start/stop bit check are dropped. Every other packet is
+returned as decoded, so a rare corrupt value or a reset of the Harp clock shows up
+as an anchor that does not line up with the rest; the
+[example](https://harp-tech.org/python/examples/time-code/) filters those out
+before fitting.
 
 ## Write data back out
 
