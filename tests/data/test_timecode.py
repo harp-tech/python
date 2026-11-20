@@ -218,13 +218,47 @@ def test_empty_transition_list_yields_no_anchors():
     assert clock["Time"].dtype == np.float64
 
 
-def test_wrong_baud_rate_yields_no_anchors():
+def test_wrong_baud_rate_warns_with_the_rate_on_the_line():
     times, states, _ = transitions([100, 101, 102])
 
-    clock = decode_timecode_from_transitions(times, states, baud_rate=9600.0)
+    with pytest.warns(UserWarning, match=r"look like ~1,000 bps, not the 9600 bps"):
+        clock = decode_timecode_from_transitions(times, states, baud_rate=9600.0)
 
     assert clock.empty
     assert clock.index.name == "LocalTime"
+
+
+def test_sample_numbers_passed_as_seconds_warn():
+    sample_rate = 30_000.0
+    times, states, _ = transitions([100, 101, 102])
+
+    with pytest.warns(UserWarning, match="divide them by the sample rate"):
+        clock = decode_timecode_from_transitions(np.rint(times * sample_rate), states)
+
+    assert clock.empty
+
+
+def test_inverted_line_warns():
+    sample_rate = 10_000.0
+    times, states, _ = transitions([100, 101, 102])
+    samples = ~render(times, states, sample_rate)
+
+    with pytest.warns(UserWarning, match="looks inverted"):
+        clock = decode_timecode_from_samples(samples, sample_rate)
+
+    assert clock.empty
+
+
+def test_line_with_bit_sized_pulses_but_no_packet_warns():
+    # one bit low, two bits high: every tenth bit, where a stop bit belongs, is low
+    falling = 0.5 + np.arange(30) * 3e-3
+    times = np.column_stack([falling, falling + 1e-3]).ravel()
+    states = np.resize([0, 1], times.size)
+
+    with pytest.warns(UserWarning, match="match 1000 bps, but no packet frames cleanly"):
+        clock = decode_timecode_from_transitions(times, states)
+
+    assert clock.empty
 
 
 # ---------------------------------------------------------------- robustness

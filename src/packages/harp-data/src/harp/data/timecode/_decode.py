@@ -1,3 +1,4 @@
+import warnings
 from typing import Any
 
 import numpy as np
@@ -174,8 +175,15 @@ def _decode(
     """Decode every packet into (first falling edge, Harp second) arrays."""
     if baud_rate <= 0:
         raise ValueError(f"baud_rate must be positive, got {baud_rate}.")
+    local, harp = _decode_packets(times, levels, 1.0 / baud_rate)
+    if local.size == 0 and np.any(~levels):
+        warnings.warn(_explain_no_packets(times, levels, baud_rate), stacklevel=3)
+    return local, harp
 
-    bit = 1.0 / baud_rate
+
+def _decode_packets(
+    times: NDArray[np.float64], levels: NDArray[np.bool_], bit: float
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     falling = times[~levels]  # a packet can only start on a falling edge
     local: list[float] = []
     harp: list[float] = []
@@ -190,6 +198,29 @@ def _decode(
         local.append(float(origin))
         harp.append(float(seconds))
     return np.array(local, dtype=np.float64), np.array(harp, dtype=np.float64)
+
+
+def _explain_no_packets(
+    times: NDArray[np.float64], levels: NDArray[np.bool_], baud_rate: float
+) -> str:
+    """Guess why a line with falling edges yielded no packet."""
+    message = f"No Harp Time Code packet decoded from {np.count_nonzero(~levels)} falling edges."
+    if _decode_packets(times, ~levels, 1.0 / baud_rate)[0].size:
+        return f"{message} The line looks inverted (idle low); invert it before decoding."
+    pulses = np.diff(times)
+    pulses = pulses[pulses > 0]
+    if pulses.size == 0:
+        return message
+    # most pulses inside a packet are one bit long, so the short end of the
+    # distribution estimates the bit period actually on the line
+    apparent = 1.0 / float(np.percentile(pulses, 10))
+    if abs(apparent / baud_rate - 1) <= 0.2:
+        return f"{message} Its pulses match {baud_rate:g} bps, but no packet frames cleanly."
+    rate = f"{apparent:,.0f}" if apparent >= 10 else f"{apparent:.2g}"
+    message += f" Its pulses look like ~{rate} bps, not the {baud_rate:g} bps of baud_rate."
+    if apparent < baud_rate / 100:
+        message += " If the timestamps are sample numbers, divide them by the sample rate."
+    return message
 
 
 def _anchor_frame(anchors: pd.Index, harp: NDArray[np.float64]) -> pd.DataFrame:
