@@ -13,4 +13,3 @@
 ::: harp.data.REFERENCE_EPOCH
 ::: harp.data.timecode.decode_timecode_from_samples
 ::: harp.data.timecode.decode_timecode_from_transitions
-::: harp.data.timecode.DEFAULT_BAUD_RATE

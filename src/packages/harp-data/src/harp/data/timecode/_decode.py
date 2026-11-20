@@ -5,9 +5,6 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
 
-#: Default Harp Time Code baud rate, in bits per second.
-DEFAULT_BAUD_RATE = 1000.0
-
 _BITS_PER_BYTE = 10  # 8N1: start bit, eight data bits, stop bit
 _PACKET_BYTES = 4  # whole second as a little-endian U32
 _RESYNC_WINDOW = 0.3  # max start-bit offset, in bits, to re-synchronize a frame on
@@ -18,7 +15,7 @@ def decode_timecode_from_transitions(
     timestamps: ArrayLike,
     states: ArrayLike,
     *,
-    baud_rate: float = DEFAULT_BAUD_RATE,
+    baud_rate: float = 1000.0,
 ) -> pd.DataFrame:
     """Decode a Harp Time Code from line transitions.
 
@@ -32,7 +29,7 @@ def decode_timecode_from_transitions(
     """
     times, levels = _as_transitions(timestamps, states)
     local, harp = _decode(times, levels, baud_rate=baud_rate)
-    return _anchor_frame(pd.Index(local, name="LocalTime", dtype=np.float64), harp)
+    return pd.DataFrame({"Time": harp}, index=pd.Index(local, name="LocalTime"))
 
 
 def decode_timecode_from_samples(
@@ -40,7 +37,7 @@ def decode_timecode_from_samples(
     sample_rate: float,
     *,
     threshold: float | None = None,
-    baud_rate: float = DEFAULT_BAUD_RATE,
+    baud_rate: float = 1000.0,
 ) -> pd.DataFrame:
     """Decode a Harp Time Code from a sampled line.
 
@@ -53,8 +50,6 @@ def decode_timecode_from_samples(
     """
     if sample_rate <= 0:
         raise ValueError(f"sample_rate must be positive, got {sample_rate}.")
-    if baud_rate <= 0:
-        raise ValueError(f"baud_rate must be positive, got {baud_rate}.")
     if sample_rate < 2 * baud_rate:
         raise ValueError(
             f"A {baud_rate} bps signal cannot be decoded from samples taken at "
@@ -66,7 +61,7 @@ def decode_timecode_from_samples(
     times = edges / sample_rate
     local, harp = _decode(times, level[edges], baud_rate=baud_rate)
     sample = np.rint(local * sample_rate).astype(np.int64)
-    return _anchor_frame(pd.Index(sample, name="Sample"), harp)
+    return pd.DataFrame({"Time": harp}, index=pd.Index(sample, name="Sample"))
 
 
 def _as_transitions(
@@ -99,27 +94,14 @@ def _as_levels(samples: ArrayLike, threshold: float | None) -> NDArray[np.bool_]
 
 
 def _detect_threshold(values: NDArray[Any]) -> float:
-    """Find the midpoint between the low and high levels by iterative (isodata) clustering."""
+    """Midpoint between the low and high levels of the line."""
     if values.size == 0:
         return 0.0
     if values.size > _THRESHOLD_SUBSAMPLE:
-        # a fixed-seed random subsample is plenty to place the cut, and keeps a long
-        # recording from being copied; a strided one could alias with the bit period
-        picks = np.random.default_rng(0).integers(0, values.size, _THRESHOLD_SUBSAMPLE)
-        values = values[picks]
-    values = values.astype(np.float64, copy=False)
-    # start from extreme percentiles rather than min/max, so rare glitches cannot seed a cluster
-    low, high = (float(level) for level in np.percentile(values, [0.01, 99.99]))
-    threshold = (low + high) / 2
-    if low == high:
-        return threshold
-    for _ in range(100):
-        below = values < threshold
-        updated = (values[below].mean() + values[~below].mean()) / 2
-        if abs(updated - threshold) <= 1e-9 * (high - low):
-            break
-        threshold = updated
-    return float(threshold)
+        # a fixed-seed random subsample is plenty, and a strided one could alias with the bits
+        values = values[np.random.default_rng(0).integers(0, values.size, _THRESHOLD_SUBSAMPLE)]
+    # extreme percentiles rather than min/max, so that rare glitches are ignored
+    return float(np.percentile(values, [0.01, 99.99]).mean())
 
 
 def _level_at(
@@ -221,8 +203,3 @@ def _explain_no_packets(
     if apparent < baud_rate / 100:
         message += " If the timestamps are sample numbers, divide them by the sample rate."
     return message
-
-
-def _anchor_frame(anchors: pd.Index, harp: NDArray[np.float64]) -> pd.DataFrame:
-    """Build the anchor → Harp time table."""
-    return pd.DataFrame({"Time": harp}, index=anchors)
