@@ -48,8 +48,9 @@ def decode_timecode_from_samples(
     """Decode a Harp Time Code from a sampled line.
 
     See the [Harp Time Code specification](https://harp-tech.org/protocol/TimeCode.html).
-    Sample ``i`` is taken at local time ``i / sample_rate``. Boolean and integer samples
-    are digital states; pass ``threshold`` to binarize analog ones. Returns the whole Harp
+    Sample ``i`` is taken at local time ``i / sample_rate``. Samples are binarized as
+    ``samples >= threshold``; by default the threshold is detected from the data as the
+    midpoint between the high and low levels. Returns the whole Harp
     second of each packet (``"Time"``) indexed by the sample of its first falling edge
     (``"Sample"``). See :func:`decode_timecode_from_transitions` for ``max_drift``.
     """
@@ -94,14 +95,30 @@ def _as_levels(samples: ArrayLike, threshold: float | None) -> NDArray[np.bool_]
     values = np.asarray(samples)
     if values.ndim != 1:
         raise ValueError("samples must be one-dimensional.")
-    if threshold is not None:
-        return values >= threshold
-    if values.dtype == np.bool_ or np.issubdtype(values.dtype, np.integer):
-        return values != 0
-    raise ValueError(
-        f"Pass a threshold to binarize samples of dtype {values.dtype}; only boolean "
-        "and integer samples are taken as digital line states."
-    )
+    if threshold is None:
+        if values.dtype == np.bool_:
+            return values
+        threshold = _detect_threshold(values)
+    return values >= threshold
+
+
+def _detect_threshold(values: NDArray[Any]) -> float:
+    """Find the midpoint between the low and high levels by iterative (isodata) clustering."""
+    values = values.astype(np.float64, copy=False)
+    if values.size == 0:
+        return 0.0
+    # start from extreme percentiles rather than min/max, so rare glitches cannot seed a cluster
+    low, high = (float(level) for level in np.percentile(values, [0.01, 99.99]))
+    threshold = (low + high) / 2
+    if low == high:
+        return threshold
+    for _ in range(100):
+        below = values < threshold
+        updated = (values[below].mean() + values[~below].mean()) / 2
+        if abs(updated - threshold) <= 1e-9 * (high - low):
+            break
+        threshold = updated
+    return float(threshold)
 
 
 def _level_at(

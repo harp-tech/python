@@ -3,7 +3,7 @@ from harp.data.timecode import decode_timecode_from_samples, decode_timecode_fro
 
 # A non-Harp acquisition system recorded the Harp Time Code on one of its digital
 # lines. `samples` is that line, sampled at the system's own rate.
-samples = np.load("timecode_line.npy")  # digital states; analog input needs a `threshold`
+samples = np.load("timecode_line.npy")  # digital or analog; the threshold is detected
 sample_rate = 30_000.0
 
 # Decode it: one row per whole Harp second, keyed on the sample where that second

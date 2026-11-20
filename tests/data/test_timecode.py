@@ -134,9 +134,51 @@ def test_analog_recording_is_binarized_by_threshold():
     assert clock["Time"].tolist() == values
 
 
-def test_float_samples_without_threshold_raises():
-    with pytest.raises(ValueError, match="threshold"):
-        decode_timecode_from_samples(np.zeros(100, dtype=np.float64), 10_000.0)
+@pytest.mark.parametrize("value", [3806874, 0xFFFFFFF0])
+def test_analog_threshold_is_detected_from_a_noisy_mostly_idle_line(value):
+    """Bytes of all ones leave the line low only for start bits, about 0.5% of the time."""
+    sample_rate = 10_000.0
+    values = [value + second for second in range(5)]
+    times, states, _ = transitions(values)
+    level = render(times, states, sample_rate)
+    noise = np.random.default_rng(0).normal(0.0, 0.15, level.size)
+    analog = np.where(level, 3.3, 0.1) - 1.0 + noise
+
+    clock = decode_timecode_from_samples(analog, sample_rate)
+
+    assert clock["Time"].tolist() == values
+
+
+@pytest.mark.parametrize(
+    "high, low", [(1, 0), (8, 0), (12_000, -3_000)], ids=["digital", "ttl-word", "int16-analog"]
+)
+def test_integer_threshold_is_detected_from_the_levels(high, low):
+    sample_rate = 10_000.0
+    values = [3806874, 3806875]
+    times, states, _ = transitions(values)
+    samples = np.where(render(times, states, sample_rate), high, low).astype(np.int16)
+
+    clock = decode_timecode_from_samples(samples, sample_rate)
+
+    assert clock["Time"].tolist() == values
+
+
+def test_detected_threshold_ignores_rare_glitches():
+    sample_rate = 10_000.0
+    values = [3806874 + second for second in range(5)]
+    times, states, _ = transitions(values)
+    analog = np.where(render(times, states, sample_rate), 3.3, 0.1)
+    analog[[100, 20_000, 40_000]] = [100.0, -100.0, 100.0]
+
+    clock = decode_timecode_from_samples(analog, sample_rate)
+
+    assert clock["Time"].tolist() == values
+
+
+def test_constant_recording_with_detected_threshold_yields_no_anchors():
+    clock = decode_timecode_from_samples(np.full(10_000, 2.5), 10_000.0)
+
+    assert clock.empty
 
 
 def test_sample_rate_below_two_samples_per_bit_raises():
