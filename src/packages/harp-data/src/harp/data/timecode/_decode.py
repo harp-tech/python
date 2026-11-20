@@ -1,26 +1,3 @@
-"""Decode a recorded Harp Time Code back into Harp seconds.
-
-The [Harp Time Code](https://harp-tech.org/protocol/TimeCode.html) is a serial signal
-carrying the current Harp time in whole seconds, emitted on a digital output at a low baud
-rate (typically 1 kbps) so that non-Harp acquisition systems can record it alongside data
-timestamped on their own clock. The functions here decode such a recording back into Harp
-seconds, paired with the local time each of them was received at.
-
-The wire format is 8N1 serial: the line idles high and every byte is sent as one low start
-bit, eight data bits (least significant first) and one high stop bit. Each packet is four
-back-to-back bytes holding the whole Harp second as a little-endian ``uint32``, with no
-header or checksum, and its first falling edge marks the start of that second.
-
-Two ways in, depending on what the recording system gives you:
-
-- a uniformly sampled waveform (digital or analog) → :func:`decode_timecode_from_samples`
-- a list of line transitions ``(time, 0/1)`` → :func:`decode_timecode_from_transitions`
-
-Each returns a table of anchors keyed on the axis that system reports its own timestamps
-on (a sample number or local seconds) against the whole Harp second that starts there.
-How those timestamps are then interpolated onto the Harp axis is left to the caller.
-"""
-
 import warnings
 from typing import Any
 
@@ -28,18 +5,12 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
 
-#: Baud rate used by existing Harp Time Code emitters, in bits per second.
+#: Default Harp Time Code baud rate, in bits per second.
 DEFAULT_BAUD_RATE = 1000.0
 
-#: Bits per byte on the wire: one start bit, eight data bits, one stop bit.
-_BITS_PER_BYTE = 10
-
-#: Bytes in a Harp Time Code packet, holding the whole second as a ``U32``.
-_PACKET_BYTES = 4
-
-#: How far, as a fraction of a bit period, a start bit may sit from its predicted
-#: position and still be used to re-synchronize the frame that follows it.
-_RESYNC_WINDOW = 0.3
+_BITS_PER_BYTE = 10  # 8N1: start bit, eight data bits, stop bit
+_PACKET_BYTES = 4  # whole second as a little-endian U32
+_RESYNC_WINDOW = 0.3  # max start-bit offset, in bits, to re-synchronize a frame on
 
 
 def decode_timecode_from_transitions(
@@ -49,22 +20,16 @@ def decode_timecode_from_transitions(
     baud_rate: float = DEFAULT_BAUD_RATE,
     max_drift: float | None = 0.1,
 ) -> pd.DataFrame:
-    """Decode Harp seconds from a list of time code line transitions.
+    """Decode a Harp Time Code from line transitions.
 
-    ``timestamps`` are the local times, in seconds, of each transition of the time code
-    line and ``states`` the level the line took at each of them (0 low, 1 high); this is
-    the shape most event-based acquisition systems report. The returned DataFrame maps the
-    local time of each decoded packet's first falling edge (the index, named
-    ``"LocalTime"``) to the whole Harp second that starts there (``"Time"``, the name the
-    readers also give the Harp time axis).
+    See the [Harp Time Code specification](https://harp-tech.org/protocol/TimeCode.html).
+    ``timestamps`` are the local times, in seconds, of each transition and ``states`` the
+    level the line took (0 low, 1 high). Returns the whole Harp second of each packet
+    (``"Time"``) indexed by the local time of its first falling edge (``"LocalTime"``).
 
-    ``baud_rate`` must match the emitter; bits are read at the center of each bit period
-    and every frame re-synchronizes on its own start bit, so a mismatch of a few percent
-    is tolerated. Packets whose start/stop bits do not check out are dropped silently, so
-    a partially recorded or glitched packet costs one anchor, not the decoding of the ones
-    around it. ``max_drift`` additionally drops packets whose seconds do not advance
-    consistently with the local clock, allowing for at most that fractional rate mismatch
-    between the two (pass ``None`` to keep everything).
+    Packets with bad framing are dropped. ``max_drift`` also drops packets whose seconds
+    disagree with the elapsed local time by more than that fraction, with a warning;
+    pass ``None`` to keep them.
     """
     times, levels = _as_transitions(timestamps, states)
     local, harp = _decode(times, levels, baud_rate=baud_rate)
@@ -80,18 +45,13 @@ def decode_timecode_from_samples(
     baud_rate: float = DEFAULT_BAUD_RATE,
     max_drift: float | None = 0.1,
 ) -> pd.DataFrame:
-    """Decode Harp seconds from a uniformly sampled recording of the time code line.
+    """Decode a Harp Time Code from a sampled line.
 
-    ``samples`` is the recorded waveform and ``sample_rate`` its sampling frequency in Hz;
-    sample ``i`` is taken to occur at local time ``i / sample_rate``. Boolean and integer
-    input is treated as the digital line state (nonzero is high); pass ``threshold`` to
-    binarize an analog recording as ``samples >= threshold``.
-
-    The returned DataFrame maps the first sample of each decoded packet's start bit (the
-    index, named ``"Sample"``) to the whole Harp second that starts there (``"Time"``).
-    See :func:`decode_timecode_from_transitions` for ``baud_rate`` and ``max_drift``.
-    About five samples per bit are needed for reliable decoding, so a 1 kbps signal wants
-    a sample rate of at least ~5 kHz.
+    See the [Harp Time Code specification](https://harp-tech.org/protocol/TimeCode.html).
+    Sample ``i`` is taken at local time ``i / sample_rate``. Boolean and integer samples
+    are digital states; pass ``threshold`` to binarize analog ones. Returns the whole Harp
+    second of each packet (``"Time"``) indexed by the sample of its first falling edge
+    (``"Sample"``). See :func:`decode_timecode_from_transitions` for ``max_drift``.
     """
     if sample_rate <= 0:
         raise ValueError(f"sample_rate must be positive, got {sample_rate}.")
@@ -115,7 +75,7 @@ def decode_timecode_from_samples(
 def _as_transitions(
     timestamps: ArrayLike, states: ArrayLike
 ) -> tuple[NDArray[np.float64], NDArray[np.bool_]]:
-    """Validate a transition list into sorted times and boolean levels."""
+    """Validate transitions into sorted times and boolean levels."""
     times = np.asarray(timestamps, dtype=np.float64)
     levels = np.asarray(states)
     if times.ndim != 1 or levels.ndim != 1:
@@ -147,14 +107,14 @@ def _as_levels(samples: ArrayLike, threshold: float | None) -> NDArray[np.bool_]
 def _level_at(
     times: NDArray[np.float64], levels: NDArray[np.bool_], at: NDArray[np.floating[Any]]
 ) -> NDArray[np.bool_]:
-    """The line level at each time in ``at``, from the transitions ``(times, levels)``."""
+    """Line level at each time in ``at``."""
     index = np.searchsorted(times, at, side="right") - 1
     # transitions alternate, so before the first one the line held the opposite level
     return np.where(index < 0, ~levels[0], levels[np.maximum(index, 0)])
 
 
 def _resync(falling: NDArray[np.float64], expected: float, bit: float) -> float:
-    """Snap a predicted start-bit time to a nearby falling edge, as a UART would."""
+    """Snap a predicted start-bit time to a nearby falling edge."""
     best, window = expected, _RESYNC_WINDOW * bit
     index = int(np.searchsorted(falling, expected))
     for candidate in (index - 1, index):
@@ -172,11 +132,7 @@ def _decode_packet(
     origin: float,
     bit: float,
 ) -> tuple[int, float] | None:
-    """Decode one time code packet whose first start bit falls at ``origin``.
-
-    Returns the whole second it carries and the time its last stop bit ends, or ``None``
-    if any of its frames is not delimited by a low start bit and a high stop bit.
-    """
+    """Decode the packet starting at ``origin`` into (seconds, end time), or ``None``."""
     payload = bytearray(_PACKET_BYTES)
     offsets = (np.arange(_BITS_PER_BYTE) + 0.5) * bit
     start = origin
@@ -198,7 +154,7 @@ def _decode(
     *,
     baud_rate: float,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-    """Decode every packet in a transition list into (first falling edge, Harp second)."""
+    """Decode every packet into (first falling edge, Harp second) arrays."""
     if baud_rate <= 0:
         raise ValueError(f"baud_rate must be positive, got {baud_rate}.")
 
@@ -229,7 +185,6 @@ def _drop_inconsistent(
         raise ValueError(f"max_drift must be non-negative, got {max_drift}.")
 
     def agrees(earlier: int, later: int) -> bool:
-        """Whether two anchors are one plausible stretch of the same clock apart."""
         elapsed_harp = harp[later] - harp[earlier]
         elapsed_local = local[later] - local[earlier]
         return bool(
@@ -265,10 +220,5 @@ def _drop_inconsistent(
 
 
 def _anchor_frame(anchors: pd.Index, harp: NDArray[np.float64]) -> pd.DataFrame:
-    """Assemble the decoded packets into an ``anchors`` → Harp time table.
-
-    ``anchors`` locate each packet on the local device's own axis, whichever one it
-    reports timestamps on. "Time" is the Harp time axis throughout ``harp.data``; here
-    it is the column, because the index is the axis being translated from.
-    """
+    """Build the anchor → Harp time table."""
     return pd.DataFrame({"Time": harp}, index=anchors)

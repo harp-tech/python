@@ -1,5 +1,3 @@
-"""Aligning a non-Harp device's local timestamps to Harp time with the Harp Time Code."""
-
 from ._decode import (
     DEFAULT_BAUD_RATE,
     decode_timecode_from_samples,
