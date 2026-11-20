@@ -2,7 +2,11 @@ from contextlib import nullcontext
 
 import numpy as np
 import pytest
-from harp.data.timecode import decode_timecode_from_samples, decode_timecode_from_transitions
+from harp.data.timecode import (
+    _decode,
+    decode_timecode_from_samples,
+    decode_timecode_from_transitions,
+)
 
 BAUD_RATE = 1000.0
 
@@ -169,6 +173,20 @@ def test_detected_threshold_ignores_rare_glitches():
     times, states, _ = transitions(values)
     analog = np.where(render(times, states, sample_rate), 3.3, 0.1)
     analog[[100, 20_000, 40_000]] = [100.0, -100.0, 100.0]
+
+    clock = decode_timecode_from_samples(analog, sample_rate)
+
+    assert clock["Time"].tolist() == values
+
+
+def test_threshold_is_detected_from_a_subsample_of_long_recordings(monkeypatch):
+    monkeypatch.setattr(_decode, "_THRESHOLD_SUBSAMPLE", 5_000)
+    sample_rate = 10_000.0
+    values = [0xFFFFFFF0 + second for second in range(5)]
+    times, states, _ = transitions(values)
+    level = render(times, states, sample_rate)
+    noise = np.random.default_rng(0).normal(0.0, 0.15, level.size)
+    analog = np.where(level, 3.3, 0.1) + noise
 
     clock = decode_timecode_from_samples(analog, sample_rate)
 

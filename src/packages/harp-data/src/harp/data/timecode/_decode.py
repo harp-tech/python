@@ -11,6 +11,7 @@ DEFAULT_BAUD_RATE = 1000.0
 _BITS_PER_BYTE = 10  # 8N1: start bit, eight data bits, stop bit
 _PACKET_BYTES = 4  # whole second as a little-endian U32
 _RESYNC_WINDOW = 0.3  # max start-bit offset, in bits, to re-synchronize a frame on
+_THRESHOLD_SUBSAMPLE = 1_000_000  # samples used to detect the threshold
 
 
 def decode_timecode_from_transitions(
@@ -104,9 +105,14 @@ def _as_levels(samples: ArrayLike, threshold: float | None) -> NDArray[np.bool_]
 
 def _detect_threshold(values: NDArray[Any]) -> float:
     """Find the midpoint between the low and high levels by iterative (isodata) clustering."""
-    values = values.astype(np.float64, copy=False)
     if values.size == 0:
         return 0.0
+    if values.size > _THRESHOLD_SUBSAMPLE:
+        # a fixed-seed random subsample is plenty to place the cut, and keeps a long
+        # recording from being copied; a strided one could alias with the bit period
+        picks = np.random.default_rng(0).integers(0, values.size, _THRESHOLD_SUBSAMPLE)
+        values = values[picks]
+    values = values.astype(np.float64, copy=False)
     # start from extreme percentiles rather than min/max, so rare glitches cannot seed a cluster
     low, high = (float(level) for level in np.percentile(values, [0.01, 99.99]))
     threshold = (low + high) / 2
