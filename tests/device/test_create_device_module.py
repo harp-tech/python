@@ -1,3 +1,4 @@
+import codecs
 import sys
 import types
 
@@ -8,6 +9,7 @@ from harp.device.core import WhoAmI
 from harp.device.schema import (
     DeviceModule,
     DeviceModuleLike,
+    DescribedDeviceModuleLike,
     create_device_module,
     parse_device_schema,
 )
@@ -17,7 +19,7 @@ from . import expected_device
 from .converters import DataConverter
 
 CONVERTERS = {"DataConverter": DataConverter()}
-MODULE_CONSTANTS = {"DEVICE_NAME", "REGISTER_MAP", "WHO_AM_I"}
+MODULE_CONSTANTS = {"DEVICE_NAME", "DEVICE_METADATA", "REGISTER_MAP", "WHO_AM_I"}
 
 
 @pytest.fixture
@@ -51,6 +53,34 @@ def test_whoami_from_schema():
         "device: D\nwhoAmI: 1216\nregisters:\n  Foo: {address: 40, type: U16, access: Read}\n"
     )
     assert mod.WHO_AM_I == 1216
+
+
+def test_device_metadata_is_schema_text(test_module, device_yml):
+    # The module carries the document it was built from, as the C# interface exposes
+    # Device.Metadata, so it can be written beside a recording or inspected later.
+    assert test_module.DEVICE_METADATA == device_yml
+
+
+def test_device_metadata_matches_generated_package(test_module):
+    # expected_device is generator output for the same schema, so both paths must
+    # expose the same document.
+    assert test_module.DEVICE_METADATA == expected_device.DEVICE_METADATA
+
+
+@pytest.mark.parametrize(
+    "encode",
+    [
+        lambda text: text.replace("\n", "\r\n").encode("utf-8"),
+        lambda text: codecs.BOM_UTF8 + text.encode("utf-8"),
+        lambda text: text.encode("utf-16"),
+    ],
+    ids=["crlf", "utf-8-bom", "utf-16"],
+)
+def test_device_metadata_normalizes_encoded_schema(encode):
+    # A generated package always reads as "\n" without a byte order mark, so a
+    # module built from the same file read as bytes must agree with it.
+    text = "device: D\nwhoAmI: 1216\nregisters:\n  Foo: {address: 40, type: U16, access: Read}\n"
+    assert create_device_module(encode(text)).DEVICE_METADATA == text
 
 
 def test_docstring_from_schema(core_yml):
@@ -111,6 +141,24 @@ def test_generated_package_matches_device_protocol():
     # expected_device is a sample of generator output, so this pins that what the
     # generator emits is accepted wherever a device module is required.
     assert isinstance(expected_device, DeviceModuleLike)
+
+
+def test_module_without_metadata_is_device_module():
+    # A device module written by hand need not carry a schema, so DEVICE_METADATA is optional.
+    mod = types.ModuleType("NoMetadata")
+    vars(mod).update(DEVICE_NAME="NoMetadata", WHO_AM_I=0, REGISTER_MAP={})
+    assert isinstance(mod, DeviceModuleLike)
+    assert not isinstance(mod, DescribedDeviceModuleLike)
+
+
+def test_emitted_module_carries_metadata(test_module):
+    assert isinstance(test_module, DescribedDeviceModuleLike)
+
+
+def test_generated_package_carries_metadata():
+    # expected_device is a sample of generator output, so this pins that what the
+    # generator emits is accepted wherever the schema is required.
+    assert isinstance(expected_device, DescribedDeviceModuleLike)
 
 
 def test_core_registers_are_not_device_module():

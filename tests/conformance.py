@@ -11,7 +11,12 @@ import numpy as np
 from harp.data import DatasetReader, open_dataset
 from harp.device.client import Device, ITransport
 from harp.device.core import OperationControl, OperationControlPayload, WhoAmI
-from harp.device.schema import DeviceModule, DeviceModuleLike, create_device_module
+from harp.device.schema import (
+    DeviceModule,
+    DeviceModuleLike,
+    DescribedDeviceModuleLike,
+    create_device_module,
+)
 from harp.protocol import (
     ArrayConverter,
     Field,
@@ -31,6 +36,15 @@ def schema_built_registers(yml: str) -> None:
     assert_type(behavior.AnalogData, Any)
     assert_type(behavior.REGISTER_MAP, dict[int, type[RegisterBase[Any]]])
     assert_type(behavior.WHO_AM_I, int)
+    assert_type(behavior.DEVICE_METADATA, str)
+    described: DescribedDeviceModuleLike = behavior
+    assert_type(described.DEVICE_METADATA, str)
+
+
+def device_metadata_narrows(module: DeviceModuleLike) -> None:
+    """A device module narrows to one carrying its schema, which then reads as str."""
+    if isinstance(module, DescribedDeviceModuleLike):
+        assert_type(module.DEVICE_METADATA, str)
 
 
 def statically_declared_registers(device: Device) -> None:

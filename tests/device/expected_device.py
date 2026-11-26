@@ -33,6 +33,7 @@ from .converters import (
 __all__ = [
     "DEVICE_NAME",
     "WHO_AM_I",
+    "DEVICE_METADATA",
     "PortDigitalIOS",
     "PwmPort",
     "EncoderModeMask",
@@ -67,6 +68,200 @@ __all__ = [
 
 DEVICE_NAME: str = "Tests"
 WHO_AM_I: int = 0
+DEVICE_METADATA: str = """\
+# yaml-language-server: $schema=https://harp-tech.org/draft-02/schema/registers.json
+device: Tests
+firmwareVersion: "0.1"
+hardwareTargets: "1.0"
+registers:
+  DigitalInputs:
+    address: 32
+    type: U8
+    access: Event
+  AnalogData:
+    address: 33
+    type: Float
+    length: 6
+    access: Event
+    payloadSpec:
+      Analog0:
+        offset: 0
+      Analog1:
+        offset: 1
+      Analog2:
+        offset: 2
+      Accelerometer:
+        offset: 3
+        length: 3
+  ComplexConfiguration:
+    address: 34
+    type: U8
+    length: 17
+    access: Write
+    payloadSpec:
+      PwmPort:
+        offset: 0
+        maskType: PwmPort
+      DutyCycle:
+        offset: 4
+        length: 4
+        interfaceType: float
+      Frequency:
+        offset: 8
+        length: 4
+        interfaceType: float
+      EventsEnabled:
+        offset: 12
+        interfaceType: bool
+      Delta:
+        offset: 13
+        length: 4
+        interfaceType: uint
+  Version:
+    address: 35
+    type: U8
+    length: 32
+    access: Event
+    payloadSpec:
+      ProtocolVersion:
+        offset: 0
+        length: 3
+        interfaceType: HarpVersion
+      FirmwareVersion:
+        offset: 3
+        length: 3
+        interfaceType: HarpVersion
+      HardwareVersion:
+        offset: 6
+        length: 3
+        interfaceType: HarpVersion
+      CoreId:
+        offset: 9
+        length: 3
+        interfaceType: string
+      InterfaceHash:
+        offset: 12
+        length: 20
+  CustomPayload:
+    address: 36
+    type: U32
+    length: 3
+    access: Read
+    interfaceType: HarpVersion
+    converter: Payload
+  CustomRawPayload:
+    address: 37
+    type: U32
+    length: 3
+    access: Read
+    interfaceType: HarpVersion
+    converter: RawPayload
+  CustomMemberConverter:
+    address: 38
+    type: U8
+    length: 3
+    access: Read
+    payloadSpec:
+      Header:
+        offset: 0
+      Data:
+        offset: 1
+        length: 2
+        interfaceType: int
+        converter: Payload
+  BitmaskSplitter:
+    address: 39
+    type: U8
+    access: Write
+    payloadSpec:
+      Low:
+        mask: 0xF
+        interfaceType: int
+        converter: Payload
+      High:
+        mask: 0xF0
+        interfaceType: int
+  Counter0:
+    address: 40
+    type: S32
+    access: Event
+  PortDIOSet:
+    address: 41
+    type: U8
+    access: Write
+    maskType: PortDigitalIOS
+  PulseDOPort0: &pulseDO
+    address: 42
+    type: U16
+    access: Write
+    minValue: 1
+  PulseDO0:
+    <<: *pulseDO
+    address: 43
+  StartPulse:
+    address: 100
+    type: U16
+    access: Write
+    description: Starts a PWM pulse.
+    payloadSpec: &startPulse
+      DigitalOutput:
+        offset: 0
+        mask: 0xC00
+        maskType: PwmPort
+      PulseWidth:
+        offset: 0
+        mask: 0x3FF
+        interfaceType: ushort
+  StartPulseTrain:
+    address: 101
+    type: U16
+    length: 2
+    access: Write
+    description: Starts a PWM pulse train.
+    payloadSpec:
+      <<: *startPulse
+      Frequency:
+        offset: 1
+        mask: 0xFF00
+        minValue: 1
+        maxValue: 255
+        defaultValue: 1
+        interfaceType: byte
+      PulseCount:
+        offset: 1
+        mask: 0xFF
+        interfaceType: byte
+  EncoderMode:
+    address: 103
+    type: U8
+    access: Write
+    maskType: EncoderModeMask
+    description: Configures the operation mode of the encoder.
+bitMasks:
+  PortDigitalIOS:
+    bits:
+      DIO0: 0x1
+      DIO1: 0x2
+      DIO2: 0x4
+      DIO3: 0x8
+      DIPort0: 0x100
+      TestDIPort1: 0x200
+      SupplyPort0: 0x400
+      PortDIO1: 0x800
+groupMasks:
+  PwmPort:
+    values:
+      Pwm0: 0x1
+      Pwm1: 0x2
+      Pwm2: 0x4
+      Pwm3: 0xA
+  EncoderModeMask:
+    description: Specifies the type of encoder mode.
+    values:
+      Position: 0x0
+      Displacement: 0x1
+"""
+"""The contents of the metadata file describing the device registers."""
 
 
 class PortDigitalIOS(enum.IntFlag):
