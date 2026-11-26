@@ -32,11 +32,28 @@ class DeviceModuleLike(Protocol):
     ``DEVICE_NAME`` is required rather than optional, so a generated package always
     states the name used for its recordings. A schema declaring none still
     builds, since :class:`DeviceModule` declares the member and leaves it empty.
+    ``DEVICE_METADATA`` is optional, so a device module written by hand need not carry
+    a schema; require it with :class:`DescribedDeviceModuleLike`.
     """
 
     DEVICE_NAME: str
     WHO_AM_I: int
     REGISTER_MAP: dict[int, type[RegisterBase[Any]]]
+
+
+@runtime_checkable
+class DescribedDeviceModuleLike(DeviceModuleLike, Protocol):
+    """A device module that also carries the schema it describes.
+
+    Generated packages and :class:`DeviceModule` both match, so accept this where the
+    schema is needed, or narrow a :class:`DeviceModuleLike` to it with ``isinstance``::
+
+        if isinstance(module, DescribedDeviceModuleLike):
+            Path("device.yml").write_text(module.DEVICE_METADATA)
+    """
+
+    DEVICE_METADATA: str
+    """The contents of the metadata file describing the device registers."""
 
 
 class DeviceModule(types.ModuleType):

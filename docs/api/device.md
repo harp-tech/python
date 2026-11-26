@@ -14,4 +14,5 @@
 ::: harp.device.schema.ConverterContext
 ::: harp.device.schema.DeviceModule
 ::: harp.device.schema.DeviceModuleLike
+::: harp.device.schema.DescribedDeviceModuleLike
 ::: harp.device.core

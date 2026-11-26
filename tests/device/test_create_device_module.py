@@ -9,6 +9,7 @@ from harp.device.core import WhoAmI
 from harp.device.schema import (
     DeviceModule,
     DeviceModuleLike,
+    DescribedDeviceModuleLike,
     create_device_module,
     parse_device_schema,
 )
@@ -140,6 +141,24 @@ def test_generated_package_matches_device_protocol():
     # expected_device is a sample of generator output, so this pins that what the
     # generator emits is accepted wherever a device module is required.
     assert isinstance(expected_device, DeviceModuleLike)
+
+
+def test_module_without_metadata_is_device_module():
+    # A device module written by hand need not carry a schema, so DEVICE_METADATA is optional.
+    mod = types.ModuleType("NoMetadata")
+    vars(mod).update(DEVICE_NAME="NoMetadata", WHO_AM_I=0, REGISTER_MAP={})
+    assert isinstance(mod, DeviceModuleLike)
+    assert not isinstance(mod, DescribedDeviceModuleLike)
+
+
+def test_emitted_module_carries_metadata(test_module):
+    assert isinstance(test_module, DescribedDeviceModuleLike)
+
+
+def test_generated_package_carries_metadata():
+    # expected_device is a sample of generator output, so this pins that what the
+    # generator emits is accepted wherever the schema is required.
+    assert isinstance(expected_device, DescribedDeviceModuleLike)
 
 
 def test_core_registers_are_not_device_module():
