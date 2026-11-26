@@ -1,3 +1,4 @@
+import codecs
 import sys
 import types
 
@@ -17,7 +18,7 @@ from . import expected_device
 from .converters import DataConverter
 
 CONVERTERS = {"DataConverter": DataConverter()}
-MODULE_CONSTANTS = {"DEVICE_NAME", "REGISTER_MAP", "WHO_AM_I"}
+MODULE_CONSTANTS = {"DEVICE_NAME", "DEVICE_METADATA", "REGISTER_MAP", "WHO_AM_I"}
 
 
 @pytest.fixture
@@ -51,6 +52,34 @@ def test_whoami_from_schema():
         "device: D\nwhoAmI: 1216\nregisters:\n  Foo: {address: 40, type: U16, access: Read}\n"
     )
     assert mod.WHO_AM_I == 1216
+
+
+def test_device_metadata_is_schema_text(test_module, device_yml):
+    # The module carries the document it was built from, as the C# interface exposes
+    # Device.Metadata, so it can be written beside a recording or inspected later.
+    assert test_module.DEVICE_METADATA == device_yml
+
+
+def test_device_metadata_matches_generated_package(test_module):
+    # expected_device is generator output for the same schema, so both paths must
+    # expose the same document.
+    assert test_module.DEVICE_METADATA == expected_device.DEVICE_METADATA
+
+
+@pytest.mark.parametrize(
+    "encode",
+    [
+        lambda text: text.replace("\n", "\r\n").encode("utf-8"),
+        lambda text: codecs.BOM_UTF8 + text.encode("utf-8"),
+        lambda text: text.encode("utf-16"),
+    ],
+    ids=["crlf", "utf-8-bom", "utf-16"],
+)
+def test_device_metadata_normalizes_encoded_schema(encode):
+    # A generated package always reads as "\n" without a byte order mark, so a
+    # module built from the same file read as bytes must agree with it.
+    text = "device: D\nwhoAmI: 1216\nregisters:\n  Foo: {address: 40, type: U16, access: Read}\n"
+    assert create_device_module(encode(text)).DEVICE_METADATA == text
 
 
 def test_docstring_from_schema(core_yml):

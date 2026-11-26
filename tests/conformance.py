@@ -31,6 +31,7 @@ def schema_built_registers(yml: str) -> None:
     assert_type(behavior.AnalogData, Any)
     assert_type(behavior.REGISTER_MAP, dict[int, type[RegisterBase[Any]]])
     assert_type(behavior.WHO_AM_I, int)
+    assert_type(behavior.DEVICE_METADATA, str)
 
 
 def statically_declared_registers(device: Device) -> None:

@@ -7,6 +7,7 @@ schema-driven device and a generated one are accessed the same way, by name from
 module or by address through ``REGISTER_MAP``.
 """
 
+import codecs
 import types
 from typing import Any, Mapping, Optional, Protocol, runtime_checkable
 
@@ -52,6 +53,9 @@ class DeviceModule(types.ModuleType):
     WHO_AM_I: int
     """The device identity declared by the schema. ``0`` when absent."""
 
+    DEVICE_METADATA: str
+    """The contents of the metadata file describing the device registers."""
+
     REGISTER_MAP: dict[int, type[RegisterBase[Any]]]
     """Address -> register class, the core Harp registers merged with those of the schema."""
 
@@ -79,6 +83,8 @@ def create_device_module(
     * ``REGISTER_MAP``, the device address space, so the core registers are
       present here even though the module does not name them;
     * ``WHO_AM_I``, the identity declared by the schema (``0`` for an unregistered device);
+    * ``DEVICE_METADATA``, the schema text itself with line endings normalized to ``\\n``,
+      as a generated package carries it;
     * ``DEVICE_NAME``, the ``device`` name of the schema, or ``name`` when given, and
       empty for a header-less register fragment. Recordings are written under this
       name, so :class:`~harp.data.DatasetReader` matches files by it;
@@ -117,8 +123,23 @@ def create_device_module(
     vars(module).update(
         contents,
         DEVICE_NAME=device_name,
+        DEVICE_METADATA=_metadata_text(text),
         REGISTER_MAP=register_map,
         WHO_AM_I=int(device.whoAmI or 0),
-        __all__=[*sorted(contents), "DEVICE_NAME", "REGISTER_MAP", "WHO_AM_I"],
+        __all__=[*sorted(contents), "DEVICE_NAME", "DEVICE_METADATA", "REGISTER_MAP", "WHO_AM_I"],
     )
     return module
+
+
+def _metadata_text(text: str | bytes) -> str:
+    """The schema as a string, as a generated package declares it.
+
+    Python reads every line ending in a source file as ``\\n``, so a generated
+    package always holds ``\\n``; normalizing here makes both paths agree for the same
+    file. Bytes are decoded as the YAML parser does for the encodings it detects by a
+    byte order mark, defaulting to UTF-8.
+    """
+    if isinstance(text, bytes):
+        bom_utf16 = text.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE))
+        text = text.decode("utf-16" if bom_utf16 else "utf-8-sig")
+    return text.replace("\r\n", "\n").replace("\r", "\n")
